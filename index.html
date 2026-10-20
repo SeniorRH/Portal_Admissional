@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#993132">
+  <meta name="theme-color" content="#173b67">
   <title>Cadastro Admissional | Senior</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -28,7 +28,7 @@
       <section class="form-section active" data-step="1">
         <div class="section-heading"><span class="step-icon">01</span><div><h2>Dados pessoais</h2><p>Informe seus dados conforme seus documentos.</p></div></div>
         <div class="fields">
-          <label class="wide">Nome completo *<input name="nome" id="nome" autocomplete="name" required maxlength="160" placeholder="Digite seu nome completo"></label>
+          <label class="wide">Nome completo *<input name="nome" autocomplete="name" required maxlength="160" placeholder="Digite seu nome completo"></label>
           <label>Nome social<input name="nomeSocial" maxlength="160" placeholder="Se aplicável"></label>
           <label>CPF *<input name="cpf" id="cpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14" autocomplete="off" aria-describedby="cpfMessage"><small id="cpfMessage" class="field-message" aria-live="polite">Informe os 11 dígitos do CPF.</small></label>
           <label>Data de nascimento *<input name="nascimento" type="date" required></label>
@@ -65,10 +65,10 @@
       </section>
 
       <section class="form-section" data-step="3">
-        <div class="section-heading"><span class="step-icon">03</span><div><h2>Documentos para admissão</h2><p>Envie arquivos legíveis. Cada arquivo começa a ser enviado ao Drive assim que for selecionado. Formatos aceitos: PDF, JPG e PNG.</p></div></div>
+        <div class="section-heading"><span class="step-icon">03</span><div><h2>Documentos para admissão</h2><p>Envie arquivos legíveis. Formatos aceitos: PDF, JPG e PNG.</p></div></div>
         <div class="document-legend"><span class="pill crucial">Indispensável</span><span class="pill optional">Opcional / conforme aplicabilidade</span><p>Os documentos indispensáveis estão marcados. Para identificação, envie a <b>CNH</b> ou, alternativamente, envie <b>RG e CPF</b>.</p></div>
         <div class="upload-list" id="uploadList"></div>
-        <div class="upload-overall" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso do envio</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">Cada arquivo será enviado ao Drive assim que você selecioná-lo.</p></div>
+        <div class="upload-overall" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso do envio</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">Ao selecionar um documento, ele será enviado imediatamente para a pasta individual do cadastro.</p></div>
         <div id="missingSummary" class="missing-summary hidden" role="alert"></div>
         <div class="privacy-note">
           <strong>Privacidade e proteção de dados</strong>
