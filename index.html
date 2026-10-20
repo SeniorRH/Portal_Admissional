@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b67">
+  <title>Cadastro Admissional | Senior</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div><strong>Senior</strong><span>CONTABILIDADE</span></div>
+    </div>
+    <a href="https://datasenior.com.br/" target="_blank" rel="noopener">Site institucional ↗</a>
+  </header>
+
+  <main class="page-shell">
+    <section class="intro">
+      <p class="eyebrow">RECURSOS HUMANOS · ADMISSÃO</p>
+      <h1>Cadastro admissional</h1>
+      <p>Preencha seus dados com atenção e envie os documentos solicitados. Os campos com <b>*</b> são obrigatórios.</p>
+      <div class="progress-wrap"><div id="progressBar"></div></div>
+      <div class="progress-caption"><span id="stepCaption">Etapa 1 de 3</span><span id="progressPercent">33%</span></div>
+    </section>
+
+    <form id="admissionForm">
+      <section class="form-section active" data-step="1">
+        <div class="section-heading"><span class="step-icon">01</span><div><h2>Dados pessoais</h2><p>Informe seus dados conforme seus documentos.</p></div></div>
+        <div class="fields">
+          <label class="wide">Nome completo *<input name="nome" autocomplete="name" required maxlength="160" placeholder="Digite seu nome completo"></label>
+          <label>Nome social<input name="nomeSocial" maxlength="160" placeholder="Se aplicável"></label>
+          <label>CPF *<input name="cpf" id="cpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14"></label>
+          <label>Data de nascimento *<input name="nascimento" type="date" required></label>
+          <label>PIS / NIS<input name="pis" inputmode="numeric" maxlength="14" placeholder="Somente números"></label>
+          <label>Estado civil<select name="estadoCivil"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Separado(a)</option><option>Viúvo(a)</option></select></label>
+          <label>Raça/cor
+            <select name="racaCor"><option value="">Selecione</option><option>Branca</option><option>Preta</option><option>Parda</option><option>Amarela</option><option>Indígena</option><option>Prefiro não informar</option></select>
+          </label>
+          <label>Pessoa com deficiência?
+            <select name="pcd" id="pcd"><option value="">Selecione</option><option value="Não">Não</option><option value="Sim">Sim</option><option value="Prefiro não informar">Prefiro não informar</option></select>
+          </label>
+          <label class="wide hidden" id="deficienciaWrap">Se desejar, informe a deficiência<input name="deficiencia" maxlength="240" placeholder="Informação opcional"></label>
+        </div>
+      </section>
+
+      <section class="form-section" data-step="2">
+        <div class="section-heading"><span class="step-icon">02</span><div><h2>Endereço e contato</h2><p>Digite o CEP para tentar preencher parte do endereço automaticamente.</p></div></div>
+        <div class="fields">
+          <label>CEP *<input name="cep" id="cep" inputmode="numeric" required maxlength="9" placeholder="00000-000"></label>
+          <label>Estado (UF) *<input name="estado" id="estado" required maxlength="2" placeholder="PR"></label>
+          <label class="wide">Rua / logradouro *<input name="endereco" id="endereco" required maxlength="200" placeholder="Rua, avenida, travessa..."></label>
+          <label>Número *<input name="numero" required maxlength="20" placeholder="Número"></label>
+          <label>Complemento<input name="complemento" maxlength="100" placeholder="Apartamento, bloco etc."></label>
+          <label>Bairro *<input name="bairro" id="bairro" required maxlength="120"></label>
+          <label>Cidade *<input name="cidade" id="cidade" required maxlength="120"></label>
+          <label>Celular *<input name="celular" id="celular" type="tel" required maxlength="16" autocomplete="tel" placeholder="(41) 99999-9999"></label>
+          <label>E-mail *<input name="email" type="email" required maxlength="180" autocomplete="email" placeholder="voce@exemplo.com.br"></label>
+          <label>Dependentes para salário-família<input name="dependentesFamilia" type="number" min="0" max="30" value="0"></label>
+          <label>Dependentes para Imposto de Renda<input name="dependentesIR" type="number" min="0" max="30" value="0"></label>
+        </div>
+        <p class="inline-note" id="cepMessage" aria-live="polite"></p>
+      </section>
+
+      <section class="form-section" data-step="3">
+        <div class="section-heading"><span class="step-icon">03</span><div><h2>Documentos para admissão</h2><p>Envie arquivos legíveis. Formatos aceitos: PDF, JPG e PNG.</p></div></div>
+        <div class="upload-list" id="uploadList"></div>
+        <div class="privacy-note">
+          <strong>Privacidade e proteção de dados</strong>
+          <p>As informações e os documentos serão usados para as finalidades relacionadas ao processo admissional e acessados somente por pessoas autorizadas. Não envie documentos de terceiros além dos solicitados para o processo.</p>
+          <label class="consent"><input type="checkbox" name="cientePrivacidade" required> Declaro que li o aviso de privacidade e que as informações fornecidas são verdadeiras. *</label>
+        </div>
+        <div class="status-message" id="statusMessage" role="status" aria-live="polite"></div>
+      </section>
+
+      <div class="form-actions">
+        <button type="button" class="btn secondary" id="backBtn" hidden>Voltar</button>
+        <span class="action-spacer"></span>
+        <button type="button" class="btn primary" id="nextBtn">Continuar <span>→</span></button>
+        <button type="submit" class="btn primary" id="submitBtn" hidden>Enviar cadastro <span>→</span></button>
+      </div>
+    </form>
+    <footer>Senior Contabilidade · Cuidar e zelar do seu patrimônio.</footer>
+  </main>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
