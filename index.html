@@ -36,6 +36,12 @@
           <label>CTPS (número)<input name="ctpsNumero" maxlength="30" placeholder="Número da carteira de trabalho"></label>
           <label>Série da CTPS<input name="ctpsSerie" maxlength="20" placeholder="Série"></label>
           <label>Estado civil<select name="estadoCivil"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Separado(a)</option><option>Viúvo(a)</option></select></label>
+          <label>Sexo (conforme cadastro/documento)
+            <select name="sexo"><option value="">Selecione</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Intersexo">Intersexo</option><option value="Prefiro não informar">Prefiro não informar</option></select>
+          </label>
+          <label>Identidade de gênero
+            <select name="identidadeGenero"><option value="">Selecione</option><option value="Mulher cisgênero">Mulher cisgênero</option><option value="Homem cisgênero">Homem cisgênero</option><option value="Mulher transgênero">Mulher transgênero</option><option value="Homem transgênero">Homem transgênero</option><option value="Pessoa não binária">Pessoa não binária</option><option value="Outra identidade">Outra identidade</option><option value="Prefiro não informar">Prefiro não informar</option></select>
+          </label>
           <label>Raça/cor
             <select name="racaCor"><option value="">Selecione</option><option>Branca</option><option>Preta</option><option>Parda</option><option>Amarela</option><option>Indígena</option><option>Prefiro não informar</option></select>
           </label>
@@ -53,7 +59,7 @@
           <label>Estado (UF) *<input name="estado" id="estado" required maxlength="2" placeholder="PR" disabled></label>
           <label class="wide">Rua / logradouro *<input name="endereco" id="endereco" required maxlength="200" placeholder="Rua, avenida, travessa..." disabled></label>
           <label>Número *<input name="numero" id="numeroResidencia" required maxlength="20" placeholder="Número" disabled></label>
-          <label>Complemento<input name="complemento" maxlength="100" placeholder="Apartamento, bloco etc." disabled></label>
+          <label>Complemento<input name="complemento" id="complemento" maxlength="100" placeholder="Apartamento, bloco etc." disabled></label>
           <label>Bairro *<input name="bairro" id="bairro" required maxlength="120" disabled></label>
           <label>Cidade *<input name="cidade" id="cidade" required maxlength="120" disabled></label>
           <label>Celular *<input name="celular" id="celular" type="tel" required maxlength="16" autocomplete="tel" placeholder="(41) 99999-9999"></label>

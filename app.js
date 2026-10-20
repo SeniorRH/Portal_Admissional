@@ -176,7 +176,26 @@ function formatBytes(bytes) {
   if (bytes < 1024*1024) return `${(bytes/1024).toFixed(0)} KB`;
   return `${(bytes/1024/1024).toFixed(1)} MB`;
 }
-nextBtn.addEventListener("click", () => { if (validateCurrentStep()) setStep(Math.min(currentStep + 1, sections.length)); });
+nextBtn.addEventListener("click", async () => {
+  if (!validateCurrentStep()) return;
+  // Prepare the employee folder before the user reaches the document-upload step.
+  if (currentStep === 2) {
+    nextBtn.disabled = true;
+    showStatus("Validando os dados e criando/localizando sua pasta individual no Drive…", false);
+    try {
+      await ensureCadastroSession();
+      showStatus("Pasta individual preparada. Agora você pode enviar os documentos.", false);
+      setStep(Math.min(currentStep + 1, sections.length));
+    } catch (error) {
+      showStatus("Não foi possível criar/localizar a pasta no Drive: " + (error.message || "verifique a configuração do Apps Script e o ID da pasta principal."), true);
+    } finally {
+      nextBtn.disabled = false;
+      updateSubmitVisibility();
+    }
+    return;
+  }
+  setStep(Math.min(currentStep + 1, sections.length));
+});
 backBtn.addEventListener("click", () => setStep(Math.max(currentStep - 1, 1)));
 
 document.querySelector("#pcd").addEventListener("change", event => {
@@ -199,7 +218,10 @@ const addressIds = ["estado", "endereco", "numeroResidencia", "complemento", "ba
 function updateAddressLock() {
   const digits = document.querySelector("#cep").value.replace(/\D/g, "");
   const unlock = digits.length === 8;
-  addressIds.forEach(id => { document.getElementById(id).disabled = !unlock; });
+  addressIds.forEach(id => {
+    const field = document.getElementById(id);
+    if (field) field.disabled = !unlock;
+  });
   if (!unlock) document.querySelector("#cepMessage").textContent = "Digite os 8 números do CEP para liberar os campos de endereço.";
   return unlock;
 }
@@ -223,7 +245,9 @@ document.querySelector("#cep").addEventListener("blur", async () => {
     document.querySelector("#bairro").value = data.bairro || "";
     document.querySelector("#cidade").value = data.localidade || "";
     document.querySelector("#estado").value = data.uf || "";
-    msg.textContent = "CEP encontrado. Confira o endereço e informe o número da residência.";
+    // Ensure the fields stay enabled after the CEP lookup and autofill.
+    updateAddressLock();
+    msg.textContent = "CEP encontrado. Confira o endereço, informe o número e preencha o complemento se houver.";
   } catch (error) {
     msg.textContent = (error.message || "Não foi possível consultar o CEP.") + " Os campos estão liberados para preenchimento manual.";
   }
@@ -348,7 +372,7 @@ form.addEventListener("submit", async event => {
     const result = await postAction({...collectFormData(), acao:"concluirCadastro", cadastroId, origem:window.location.href});
     setOverall(100, "Cadastro concluído com sucesso.");
     showStatus("Cadastro concluído. Os dados e documentos foram salvos.", false);
-    form.reset(); uploadedKeys.clear(); cadastroId = null; updateAddressLock();
+    form.reset(); uploadedKeys.clear(); uploadingKeys.clear(); cadastroId = null; updateAddressLock();
     submitBtn.hidden = true;
   } catch (error) {
     try { await refreshDriveDocuments(); } catch (_) { /* A mensagem de conclusão continua sendo exibida. */ }
