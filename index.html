@@ -31,9 +31,11 @@
         <div class="fields">
           <label class="wide">Nome completo *<input name="nome" autocomplete="name" required maxlength="160" placeholder="Digite seu nome completo"></label>
           <label>Nome social<input name="nomeSocial" maxlength="160" placeholder="Se aplicável"></label>
-          <label>CPF *<input name="cpf" id="cpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14"></label>
+          <label>CPF *<input name="cpf" id="cpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14" autocomplete="off" aria-describedby="cpfMessage"><small id="cpfMessage" class="field-message" aria-live="polite">Informe os 11 dígitos do CPF.</small></label>
           <label>Data de nascimento *<input name="nascimento" type="date" required></label>
           <label>PIS / NIS<input name="pis" inputmode="numeric" maxlength="14" placeholder="Somente números"></label>
+          <label>CTPS (número)<input name="ctpsNumero" maxlength="30" placeholder="Número da carteira de trabalho"></label>
+          <label>Série da CTPS<input name="ctpsSerie" maxlength="20" placeholder="Série"></label>
           <label>Estado civil<select name="estadoCivil"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Separado(a)</option><option>Viúvo(a)</option></select></label>
           <label>Raça/cor
             <select name="racaCor"><option value="">Selecione</option><option>Branca</option><option>Preta</option><option>Parda</option><option>Amarela</option><option>Indígena</option><option>Prefiro não informar</option></select>
@@ -46,29 +48,38 @@
       </section>
 
       <section class="form-section" data-step="2">
-        <div class="section-heading"><span class="step-icon">02</span><div><h2>Endereço e contato</h2><p>Digite o CEP para tentar preencher parte do endereço automaticamente.</p></div></div>
+        <div class="section-heading"><span class="step-icon">02</span><div><h2>Endereço e contato</h2><p>Informe primeiro o CEP. Os campos de endereço serão liberados após digitar os 8 números.</p></div></div>
         <div class="fields">
           <label>CEP *<input name="cep" id="cep" inputmode="numeric" required maxlength="9" placeholder="00000-000"></label>
-          <label>Estado (UF) *<input name="estado" id="estado" required maxlength="2" placeholder="PR"></label>
-          <label class="wide">Rua / logradouro *<input name="endereco" id="endereco" required maxlength="200" placeholder="Rua, avenida, travessa..."></label>
-          <label>Número *<input name="numero" required maxlength="20" placeholder="Número"></label>
-          <label>Complemento<input name="complemento" maxlength="100" placeholder="Apartamento, bloco etc."></label>
-          <label>Bairro *<input name="bairro" id="bairro" required maxlength="120"></label>
-          <label>Cidade *<input name="cidade" id="cidade" required maxlength="120"></label>
+          <label>Estado (UF) *<input name="estado" id="estado" required maxlength="2" placeholder="PR" disabled></label>
+          <label class="wide">Rua / logradouro *<input name="endereco" id="endereco" required maxlength="200" placeholder="Rua, avenida, travessa..." disabled></label>
+          <label>Número *<input name="numero" id="numeroResidencia" required maxlength="20" placeholder="Número" disabled></label>
+          <label>Complemento<input name="complemento" maxlength="100" placeholder="Apartamento, bloco etc." disabled></label>
+          <label>Bairro *<input name="bairro" id="bairro" required maxlength="120" disabled></label>
+          <label>Cidade *<input name="cidade" id="cidade" required maxlength="120" disabled></label>
           <label>Celular *<input name="celular" id="celular" type="tel" required maxlength="16" autocomplete="tel" placeholder="(41) 99999-9999"></label>
           <label>E-mail *<input name="email" type="email" required maxlength="180" autocomplete="email" placeholder="voce@exemplo.com.br"></label>
           <label>Dependentes para salário-família<input name="dependentesFamilia" type="number" min="0" max="30" value="0"></label>
           <label>Dependentes para Imposto de Renda<input name="dependentesIR" type="number" min="0" max="30" value="0"></label>
         </div>
-        <p class="inline-note" id="cepMessage" aria-live="polite"></p>
+        <p class="inline-note" id="cepMessage" aria-live="polite">Digite os 8 números do CEP para liberar os campos de endereço.</p>
       </section>
 
       <section class="form-section" data-step="3">
         <div class="section-heading"><span class="step-icon">03</span><div><h2>Documentos para admissão</h2><p>Envie arquivos legíveis. Formatos aceitos: PDF, JPG e PNG.</p></div></div>
+        <div class="document-legend"><span class="pill crucial">Indispensável</span><span class="pill optional">Opcional / conforme aplicabilidade</span><p>Os documentos indispensáveis estão marcados. Para identificação, envie a <b>CNH</b> ou, alternativamente, envie <b>RG e CPF</b>.</p></div>
         <div class="upload-list" id="uploadList"></div>
+        <div class="upload-overall" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso do envio</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">Os arquivos serão preparados e enviados ao concluir o cadastro.</p></div>
+        <div id="missingSummary" class="missing-summary hidden" role="alert"></div>
         <div class="privacy-note">
           <strong>Privacidade e proteção de dados</strong>
-          <p>As informações e os documentos serão usados para as finalidades relacionadas ao processo admissional e acessados somente por pessoas autorizadas. Não envie documentos de terceiros além dos solicitados para o processo.</p>
+          <p>Esses documentos são indispensáveis para efetuarmos a admissão.</p>
+          <ol class="legal-list">
+            <li>O tratamento de dados pessoais dar-se-á de acordo com as bases legais previstas nas hipóteses dos Arts. 7º e/ou 11 da Lei 13.709/2018, às quais se submeterão os serviços, e para propósitos legítimos, específicos, explícitos e informados ao titular;</li>
+            <li>O tratamento dos dados será limitado às atividades necessárias ao atingimento das finalidades de execução do contrato de trabalho, utilizando-os em cumprimento de obrigação legal ou regulatória, no exercício regular de direito, por determinação judicial ou por requisição da ANPD;</li>
+            <li>Os sistemas que servirão de base para armazenamento dos dados pessoais coletados seguem um conjunto de premissas, políticas e especificações técnicas que regulamentam a utilização da Tecnologia de Informação e Comunicação no Governo Federal.</li>
+          </ol>
+          <p class="privacy-footnote">As informações e os documentos serão utilizados para as finalidades relacionadas ao processo admissional e acessados somente por pessoas autorizadas.</p>
           <label class="consent"><input type="checkbox" name="cientePrivacidade" required> Declaro que li o aviso de privacidade e que as informações fornecidas são verdadeiras. *</label>
         </div>
         <div class="status-message" id="statusMessage" role="status" aria-live="polite"></div>
@@ -78,7 +89,7 @@
         <button type="button" class="btn secondary" id="backBtn" hidden>Voltar</button>
         <span class="action-spacer"></span>
         <button type="button" class="btn primary" id="nextBtn">Continuar <span>→</span></button>
-        <button type="submit" class="btn primary" id="submitBtn" hidden>Enviar cadastro <span>→</span></button>
+        <button type="submit" class="btn primary" id="submitBtn" hidden>Concluir e enviar cadastro <span>→</span></button>
       </div>
     </form>
     <footer>Senior Contabilidade · Cuidar e zelar do seu patrimônio.</footer>
