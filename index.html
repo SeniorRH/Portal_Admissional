@@ -24,8 +24,6 @@
       <div class="progress-caption"><span id="stepCaption">Etapa 1 de 3</span><span id="progressPercent">33%</span></div>
     </section>
 
-    <div class="upload-overall global-progress" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso e status do cadastro</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">O sistema informará quando estiver validando dados, consultando o Drive ou enviando documentos.</p></div>
-
     <form id="admissionForm">
       <section class="form-section active" data-step="1">
         <div class="section-heading"><span class="step-icon">01</span><div><h2>Dados pessoais</h2><p>Informe seus dados conforme seus documentos.</p></div></div>
@@ -100,6 +98,16 @@
         <button type="submit" class="btn primary" id="submitBtn" hidden>Concluir e enviar cadastro <span>→</span></button>
       </div>
     </form>
+    <div class="upload-overall global-progress" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso e status do cadastro</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">O sistema informará quando estiver validando dados, consultando o Drive ou enviando documentos.</p></div>
+    <dialog id="birthDateDialog" class="lookup-dialog" aria-labelledby="birthDateTitle">
+      <form method="dialog" id="birthDateForm">
+        <h2 id="birthDateTitle">Confirmar identidade</h2>
+        <p>Encontramos um cadastro para este CPF. Para proteger seus dados, informe sua data de nascimento para recuperar os dados e documentos já registrados.</p>
+        <label>Data de nascimento *<input id="lookupBirthDate" type="date" required></label>
+        <p id="lookupBirthMessage" class="field-message" aria-live="polite"></p>
+        <div class="dialog-actions"><button type="button" class="btn secondary" id="cancelBirthLookup">Cancelar</button><button type="submit" class="btn primary" id="confirmBirthLookup">Validar e carregar dados</button></div>
+      </form>
+    </dialog>
     <footer>Senior Contabilidade · Cuidar e zelar do seu patrimônio.</footer>
   </main>
   <aside class="map-mini" aria-label="Localização da Senior Contabilidade">

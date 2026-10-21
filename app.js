@@ -230,27 +230,77 @@ document.querySelector("#cpf").addEventListener("input", event => {
 });
 document.querySelector("#cpf").addEventListener("blur", () => validateCpf(true));
 document.querySelector("#cpf").addEventListener("keydown", event => { if (event.key === "Tab") validateCpf(true); });
+const birthDateDialog = document.querySelector('#birthDateDialog');
+const birthDateForm = document.querySelector('#birthDateForm');
+let lookupCpfPending = '';
 document.querySelector('#lookupCpfBtn')?.addEventListener('click', async () => {
   if (!validateCpf(true)) return;
-  const btn=document.querySelector('#lookupCpfBtn'); btn.disabled=true;
+  const btn = document.querySelector('#lookupCpfBtn');
+  btn.disabled = true;
+  const cpf = document.querySelector('#cpf').value;
   try {
-    const found=await postAction({acao:'consultarCpf',cpf:document.querySelector('#cpf').value});
-    if (!found.encontrado) { showStatus(found.mensagem || 'Não foi encontrado cadastro anterior.', true); return; }
-    const nome=String(form.elements.nome.value||'').trim();
-    const nascimento=String(form.elements.nascimento.value||'').trim();
-    if (!nome || !nascimento) { showStatus('Cadastro encontrado. Preencha o nome completo e a data de nascimento para confirmar sua identidade e recuperar os dados.', true); form.elements.nome.focus(); return; }
-    const verified=await postAction({acao:'validarIdentidadeCadastro',cpf:form.elements.cpf.value,nome,nascimento});
-    cadastroId=verified.cadastroId;
-    Object.entries(verified.dados||{}).forEach(([key,value])=>{ const field=form.elements[key]; if(field && !['cpf'].includes(key)) field.value=value; });
-    uploadedKeys.clear();
-    (verified.documentos||[]).forEach(doc=>{ uploadedKeys.add(doc.chave); const status=document.querySelector(`#status-${CSS.escape(doc.chave)}`); const bar=document.querySelector(`#bar-${CSS.escape(doc.chave)}`); if(status) status.textContent=`✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`; if(bar) bar.style.width='100%'; });
-    renderDocuments();
-    (verified.documentos||[]).forEach(doc=>{uploadedKeys.add(doc.chave); const status=document.querySelector(`#status-${CSS.escape(doc.chave)}`); const bar=document.querySelector(`#bar-${CSS.escape(doc.chave)}`); if(status) status.textContent=`✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`; if(bar) bar.style.width='100%';});
-    updateAddressLock(); updateMissingSummary(); updateSubmitVisibility();
-    showStatus(verified.mensagem + ' Os documentos já enviados foram recuperados.', false);
-  } catch(error) { showStatus(error.message || 'Não foi possível consultar o cadastro.', true); }
-  finally { btn.disabled=false; }
+    setOverall(8, 'Consultando se já existe cadastro para este CPF…');
+    const found = await postAction({acao:'consultarCpf', cpf});
+    if (!found.encontrado) { showStatus(found.mensagem || 'Não foi encontrado cadastro anterior.', true); setOverall(0, 'Nenhum cadastro anterior foi localizado.'); return; }
+    lookupCpfPending = cpf;
+    document.querySelector('#lookupBirthDate').value = '';
+    document.querySelector('#lookupBirthMessage').textContent = '';
+    birthDateDialog.showModal();
+    setOverall(0, 'Aguardando confirmação da data de nascimento.');
+  } catch (error) {
+    const ref = criarReferenciaErro();
+    showStatus(`ERRO ${ref}: Não foi possível consultar o CPF: ${error.message}. Copie o código e encaminhe à equipe de TI.`, true);
+    setOverall(0, 'Falha ao consultar cadastro.');
+  } finally { btn.disabled = false; }
 });
+document.querySelector('#cancelBirthLookup')?.addEventListener('click', () => birthDateDialog.close());
+birthDateForm?.addEventListener('submit', async event => {
+  event.preventDefault();
+  const birth = document.querySelector('#lookupBirthDate').value;
+  const confirmBtn = document.querySelector('#confirmBirthLookup');
+  const message = document.querySelector('#lookupBirthMessage');
+  if (!birth || !lookupCpfPending) { message.textContent = 'Informe sua data de nascimento.'; return; }
+  confirmBtn.disabled = true;
+  message.textContent = 'Validando CPF e data de nascimento com o servidor…';
+  setOverall(15, 'Validando CPF e data de nascimento no servidor…');
+  try {
+    const verified = await postAction({acao:'validarIdentidadeCadastro', cpf:lookupCpfPending, nascimento:birth});
+    cadastroId = verified.cadastroId;
+    const dados = verified.dados || {};
+    Object.entries(dados).forEach(([key, value]) => {
+      const field = form.elements[key];
+      if (!field || key === 'cientePrivacidade') return;
+      if (key === 'cpf') field.value = formatCpf(value);
+      else if (field instanceof RadioNodeList) { /* campos agrupados não são usados neste formulário */ }
+      else field.value = value == null ? '' : String(value);
+    });
+    form.elements.cientePrivacidade.checked = false;
+    document.querySelector('#pcd').dispatchEvent(new Event('change', {bubbles:true}));
+    updateAddressLock();
+    renderDocuments();
+    uploadedKeys.clear();
+    (verified.documentos || []).forEach(doc => {
+      uploadedKeys.add(doc.chave);
+      const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
+      const bar = document.querySelector(`#bar-${CSS.escape(doc.chave)}`);
+      if (status) status.textContent = `✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`;
+      if (bar) bar.style.width = '100%';
+    });
+    updateMissingSummary(); updateSubmitVisibility();
+    birthDateDialog.close();
+    setStep(1);
+    showStatus(verified.mensagem + ' Os campos foram preenchidos com os dados recuperados. Revise e altere o que for necessário; ao concluir, o cadastro será atualizado.', false);
+    setOverall(25, 'Dados recuperados. Revise ou altere os campos antes de continuar.');
+  } catch (error) {
+    message.textContent = error.message || 'Não foi possível validar os dados.';
+    setOverall(0, 'A validação não foi concluída. Confira a data informada.');
+  } finally { confirmBtn.disabled = false; }
+});
+function formatCpf(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 11);
+  if (digits.length !== 11) return digits;
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
 
 const addressIds = ["estado", "endereco", "numeroResidencia", "complemento", "bairro", "cidade"];
 function updateAddressLock() {
@@ -410,9 +460,16 @@ form.addEventListener("submit", async event => {
     setOverall(95, "Conferindo os dados e os documentos já enviados ao Drive…");
     const result = await postAction({...collectFormData(), acao:"concluirCadastro", cadastroId, origem:window.location.href});
     setOverall(100, "Cadastro concluído com sucesso.");
-    showStatus("Cadastro concluído. Os dados e documentos foram salvos.", false);
-    form.reset(); uploadedKeys.clear(); uploadingKeys.clear(); cadastroId = null; updateAddressLock();
+    showStatus("Cadastro concluído. Os dados e documentos foram salvos. Você será direcionado ao início para um novo cadastro.", false);
+    form.reset(); uploadedKeys.clear(); uploadingKeys.clear(); cadastroId = null; sessionPromise = null;
+    document.querySelector('#quantidadeFilhos').value = '0';
+    document.querySelector('#pcd').dispatchEvent(new Event('change', {bubbles:true}));
+    document.querySelector('[name="estadoCivil"]').dispatchEvent(new Event('change', {bubbles:true}));
+    renderDocuments(); updateAddressLock();
+    setOverall(0, 'Cadastro concluído. Pronto para iniciar um novo cadastro.');
+    setStep(1);
     submitBtn.hidden = true;
+    window.scrollTo({top:0, behavior:'smooth'});
   } catch (error) {
     try { await refreshDriveDocuments(); } catch (_) { /* A mensagem de conclusão continua sendo exibida. */ }
     updateMissingSummary();

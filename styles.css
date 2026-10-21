@@ -17,4 +17,6 @@ form{background:#fff;border:1px solid var(--line);border-radius:16px;margin-top:
 
 .lookup-button{align-self:flex-start;border:1px solid #993132;background:#fff;color:#993132;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer}.lookup-button:disabled{opacity:.5;cursor:wait}
 
-.global-progress{position:sticky;top:8px;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,.08);margin:14px 0 18px}.upload-item.file-ready .file-status{color:#17663a;font-weight:700}.upload-item.file-error .file-status{font-weight:700}
+.global-progress{position:static;z-index:1;box-shadow:0 4px 16px rgba(0,0,0,.08);margin:14px 0 18px}.upload-item.file-ready .file-status{color:#17663a;font-weight:700}.upload-item.file-error .file-status{font-weight:700}
+
+.lookup-dialog{width:min(480px,calc(100% - 32px));border:1px solid #dbe3ec;border-radius:14px;padding:0;box-shadow:0 24px 80px rgba(0,0,0,.28);color:#111827}.lookup-dialog::backdrop{background:rgba(15,23,42,.55)}.lookup-dialog form{padding:24px}.lookup-dialog h2{margin:0 0 10px;font-size:21px;color:#111827}.lookup-dialog p{font-size:13px;line-height:1.55;color:#374151}.lookup-dialog label{display:flex;flex-direction:column;gap:7px;margin-top:18px;font-size:12px;font-weight:700}.lookup-dialog input{min-height:42px;border:1px solid #cbd5e1;border-radius:7px;padding:9px 11px;font:inherit;color:#111827}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.lookup-dialog .btn{min-height:40px}
