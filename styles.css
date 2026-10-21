@@ -18,6 +18,7 @@ form{background:#fff;border:1px solid var(--line);border-radius:16px;margin-top:
 .lookup-button{align-self:flex-start;border:1px solid #993132;background:#fff;color:#993132;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer}.lookup-button:disabled{opacity:.5;cursor:wait}
 
 .global-progress{position:static;z-index:1;box-shadow:0 4px 16px rgba(0,0,0,.08);margin:14px 0 18px}.upload-item.file-ready .file-status{color:#17663a;font-weight:700}.upload-item.file-error .file-status{font-weight:700}
+.pill.required{background:#fff0e5;color:#8c3c00}.field-pair{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:18px 20px}.dependent-fields{display:grid;gap:12px}.dependent-card{min-width:0;margin:0;padding:15px;border:1px solid var(--line);border-radius:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dependent-card legend{padding:0 7px;font-size:12px;font-weight:800;color:#993132}.dependent-card label{min-width:0}.dependent-card input{width:100%;height:43px;border:1px solid #cfd9e5;border-radius:8px;padding:0 12px;color:#111827;font:400 13px Inter,Arial;background:#fff}.date-input-wrap{display:flex;align-items:stretch;gap:7px}.date-input-wrap>.birth-date{min-width:0;flex:1}.date-picker{width:46px;height:43px;border:1px solid #cfd9e5;border-radius:8px;background:#fff;padding:7px;cursor:pointer}.date-picker::-webkit-calendar-picker-indicator{cursor:pointer}.text-button{width:max-content;padding:0;border:0;background:transparent;color:#993132;font:600 12px Inter,Arial;text-decoration:underline;cursor:pointer}.contact-secondary{display:grid;gap:10px}.contact-secondary label{max-width:calc(50% - 10px)}.missing-link{padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;text-decoration:underline;cursor:pointer}.identity-description{font-size:11px;color:#4b5563;font-weight:500}.whatsapp-float{width:52px;height:52px;padding:12px;justify-content:center}.wa-icon{display:block;width:27px;height:27px;fill:currentColor}.wa-copy{display:none}
 
 .lookup-dialog{width:min(480px,calc(100% - 32px));border:1px solid #dbe3ec;border-radius:14px;padding:0;box-shadow:0 24px 80px rgba(0,0,0,.28);color:#111827}.lookup-dialog::backdrop{background:rgba(15,23,42,.55)}.lookup-dialog form{padding:24px}.lookup-dialog h2{margin:0 0 10px;font-size:21px;color:#111827}.lookup-dialog p{font-size:13px;line-height:1.55;color:#374151}.lookup-dialog label{display:flex;flex-direction:column;gap:7px;margin-top:18px;font-size:12px;font-weight:700}.lookup-dialog input{min-height:42px;border:1px solid #cbd5e1;border-radius:7px;padding:9px 11px;font:inherit;color:#111827}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.lookup-dialog .btn{min-height:40px}
 
@@ -69,6 +70,7 @@ input, select { min-width: 0; }
   .map-mini { margin: 10px; }
   .map-mini iframe { height: 120px; }
   .whatsapp-float { right: 10px; bottom: 10px; }
+  .field-pair{grid-template-columns:minmax(0,1fr);gap:14px}.dependent-card{grid-template-columns:minmax(0,1fr);padding:12px}.contact-secondary label{max-width:none}.date-picker{height:46px;min-width:46px}
 }
 @media (max-width: 380px) {
   .site-header a { font-size: 10px; }
@@ -76,3 +78,20 @@ input, select { min-width: 0; }
   .form-section { padding-left: 11px; padding-right: 11px; }
   .form-actions .btn { flex-basis: 100%; }
 }
+
+.phone2-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+.date-input-wrap{position:relative}
+.date-input-wrap .date-picker{position:absolute;width:1px;height:1px;min-width:1px;right:46px;top:50%;opacity:0;pointer-events:none;padding:0;border:0;overflow:hidden;clip-path:inset(50%)}
+.calendar-button{width:46px;min-width:46px;border:1px solid #cfd9e5;border-radius:8px;background:#fff;color:#993132;font-size:21px;cursor:pointer}
+.map-mini{position:fixed;right:16px;top:105px;left:auto;bottom:auto;width:min(230px,calc(100vw - 20px));max-width:none;margin:0;z-index:20}
+.map-drag-handle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:3px 4px;border:0;background:transparent;color:#000;font:700 12px Inter,Arial,sans-serif;text-align:left;cursor:move;touch-action:none}
+.map-drag-handle span{color:#6b7280;font-size:10px;font-weight:500}
+.map-mini iframe{height:130px}
+.inline-field-pair{align-items:start}
+.file-picker{position:relative;display:flex;flex-direction:row;align-items:center;gap:9px;width:100%;min-width:0;overflow:hidden;cursor:pointer}
+.file-picker-button{flex:none;border:1px solid #cfd9e5;border-radius:7px;background:#f7f9fc;color:#111827;padding:8px 10px;font-size:11px;font-weight:700}
+.file-picker-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;color:#4b5563}
+.upload-item .file-picker input[type="file"]{position:absolute;inset:0;width:100%;height:100%;max-width:none;opacity:0;cursor:pointer}
+.file-picker:focus-within .file-picker-button{outline:3px solid #99313230;border-color:#993132}
+@media(max-width:640px){.map-mini{position:fixed;width:min(230px,calc(100vw - 20px));margin:0}.map-mini iframe{height:120px}.phone2-fields{grid-template-columns:minmax(0,1fr)}.date-picker{right:46px}}
+@media(max-width:640px){.inline-field-pair{grid-template-columns:minmax(0,1fr)}}

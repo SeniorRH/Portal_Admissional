@@ -21,6 +21,11 @@ const uploadingKeys = new Set();
 const driveDocuments = new Map();
 let lastAutoLookupCpf = "";
 let lookupInProgress = false;
+const dependentData = new Map();
+const dependentCountField = document.querySelector('#quantidadeFilhos');
+const childrenFields = document.querySelector('#childrenFields');
+const today = new Date();
+const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
 function formatarDataDigitada(input) {
   let digits = String(input.value || '').replace(/\D/g, '').slice(0, 8);
@@ -35,69 +40,251 @@ function dataBrasileiraValida(value) {
   const date = new Date(y, mo - 1, d);
   return date.getFullYear() === y && date.getMonth() === mo - 1 && date.getDate() === d;
 }
-[document.querySelector('input[name="nascimento"]'), document.querySelector('#lookupBirthDate')].filter(Boolean).forEach(input => {
-  input.addEventListener('input', () => formatarDataDigitada(input));
-  input.addEventListener('blur', () => {
-    if (input.value && !dataBrasileiraValida(input.value)) input.setCustomValidity('Informe uma data válida no formato dd/mm/aaaa.');
-    else input.setCustomValidity('');
+function idadeEmAnos(value) {
+  if (!dataBrasileiraValida(value)) return null;
+  const [day, month, year] = value.split('/').map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) age--;
+  return age;
+}
+function isoParaDataBrasileira(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+}
+function sincronizarCalendario(input) {
+  const picker = input.parentElement.querySelector('.date-picker');
+  const date = String(input.value || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (picker) picker.value = date ? `${date[3]}-${date[2]}-${date[1]}` : '';
+}
+function adicionarCalendario(input) {
+  const picker = input.parentElement.querySelector('.date-picker');
+  if (!input.matches('.birth-date') || !picker || picker === input) return;
+  picker.max = todayIso;
+  sincronizarCalendario(input);
+  input.parentElement.querySelector('.calendar-button')?.addEventListener('click', () => {
+    if (typeof picker.showPicker === 'function') picker.showPicker();
+    else picker.click();
   });
-  input.addEventListener('input', () => input.setCustomValidity(''));
+  picker.addEventListener('change', () => {
+    input.value = isoParaDataBrasileira(picker.value);
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+    input.dispatchEvent(new Event('change', {bubbles:true}));
+  });
+}
+document.querySelectorAll('.birth-date').forEach(adicionarCalendario);
+document.addEventListener('input', event => {
+  if (event.target.matches('.birth-date')) {
+    formatarDataDigitada(event.target);
+    event.target.setCustomValidity('');
+    sincronizarCalendario(event.target);
+  }
+  if (event.target.matches('[data-dependent-cpf]')) {
+    formatCpfField(event.target);
+    validarCpfDependente(event.target);
+  }
+  if (event.target.matches('[data-dependent-birth]')) validateDependentBirth(event.target, false);
+  if (event.target.matches('#cpf')) {
+    childrenFields.querySelectorAll('[data-dependent-cpf]').forEach(validarCpfDependente);
+  }
 });
+document.addEventListener('blur', event => {
+  if (event.target.matches('.birth-date') && event.target.value && !dataBrasileiraValida(event.target.value)) {
+    event.target.setCustomValidity('Informe uma data válida no formato dd/mm/aaaa.');
+  }
+}, true);
+
+function formatCpfField(input) {
+  let value = input.value.replace(/\D/g, '').slice(0, 11);
+  if (value.length > 9) value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+  else if (value.length > 6) value = value.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+  else if (value.length > 3) value = value.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+  input.value = value;
+  input.setCustomValidity('');
+}
+
+function validarCpfDependente(input, showMessage = true) {
+  const value = input.value;
+  const cpf = value.replace(/\D/g, '');
+  const index = Number(input.dataset.dependentIndex);
+  const duplicatesChild = [...childrenFields.querySelectorAll('[data-dependent-cpf]')]
+    .some(other => other !== input && cpf.length === 11 && other.value.replace(/\D/g, '') === cpf);
+  const duplicatesParent = cpf.length === 11 && cpf === String(form.elements.cpf.value || '').replace(/\D/g, '');
+  const valid = cpfValido(cpf);
+  let error = '';
+  if (!cpf) error = 'Informe o CPF do filho.';
+  else if (!valid) error = 'CPF inválido. Confira os números digitados.';
+  else if (duplicatesParent) error = 'O CPF do filho não pode ser igual ao CPF do responsável.';
+  else if (duplicatesChild) error = 'Este CPF já foi informado para outro filho.';
+  input.setCustomValidity(error);
+  const message = input.closest('label').querySelector('.dependent-cpf-message');
+  if (showMessage || error) {
+    message.textContent = error || 'CPF válido.';
+    message.classList.toggle('error', Boolean(error));
+  }
+  return !error;
+}
+
+function validateDependentBirth(input, report) {
+  const age = idadeEmAnos(input.value);
+  const message = input.closest('label').querySelector('.dependent-birth-message');
+  if (!input.value || !dataBrasileiraValida(input.value)) {
+    input.setCustomValidity(input.value ? 'Informe uma data válida.' : 'Informe a data de nascimento.');
+    message.textContent = input.value ? 'Informe uma data válida no formato dd/mm/aaaa.' : 'Obrigatória. O filho deve ter menos de 18 anos.';
+  } else if (age >= 18) {
+    input.setCustomValidity('A data informada corresponde a 18 anos ou mais. Informe apenas filhos menores de 18 anos.');
+    message.textContent = 'A idade deve ser inferior a 18 anos na data de hoje.';
+  } else if (age < 0) {
+    input.setCustomValidity('A data de nascimento não pode estar no futuro.');
+    message.textContent = 'A data não pode ser futura.';
+  } else {
+    input.setCustomValidity('');
+    message.textContent = `Idade validada: ${age} ${age === 1 ? 'ano' : 'anos'}.`;
+  }
+  message.classList.toggle('error', Boolean(input.validationMessage));
+  if (report && input.validationMessage) input.reportValidity();
+  return !input.validationMessage;
+}
+
+function saveDependentValues() {
+  childrenFields.querySelectorAll('[data-dependent-index]').forEach(input => {
+    const index = Number(input.dataset.dependentIndex);
+    const data = dependentData.get(index) || {};
+    data[input.dataset.dependentField] = input.value;
+    dependentData.set(index, data);
+  });
+}
+function renderDependentFields() {
+  saveDependentValues();
+  const count = Math.min(20, Math.max(0, Number(dependentCountField.value || 0)));
+  dependentCountField.value = String(count);
+  childrenFields.innerHTML = '';
+  childrenFields.classList.toggle('hidden', count === 0);
+  for (let index = 1; index <= count; index++) {
+    const data = dependentData.get(index) || {};
+    const block = document.createElement('fieldset');
+    block.className = 'dependent-card';
+    block.innerHTML = `<legend>Dados do dependente</legend>
+      <label>Nome completo do dependente *<input name="filho_${index}_nome" data-dependent-index="${index}" data-dependent-field="nome" required maxlength="160" value="${escapeHtml(data.nome || '')}"></label>
+      <label>CPF do dependente *<input name="filho_${index}_cpf" data-dependent-index="${index}" data-dependent-field="cpf" data-dependent-cpf inputmode="numeric" required maxlength="14" placeholder="000.000.000-00" value="${escapeHtml(data.cpf || '')}"><small class="field-message dependent-cpf-message">CPF será validado para confirmar os dados.</small></label>
+      <label>Data de nascimento do dependente *<span class="date-input-wrap"><input class="birth-date" name="filho_${index}_nascimento" data-dependent-index="${index}" data-dependent-field="nascimento" data-dependent-birth type="text" inputmode="numeric" required maxlength="10" placeholder="dd/mm/aaaa" pattern="\\d{2}/\\d{2}/\\d{4}" value="${escapeHtml(data.nascimento || '')}"><button type="button" class="calendar-button" aria-label="Abrir calendário da data de nascimento do dependente">▦</button><input class="date-picker" type="date" tabindex="-1" aria-hidden="true"></span><small class="field-message dependent-birth-message">Obrigatória. O dependente deve ter menos de 18 anos.</small></label>`;
+    childrenFields.appendChild(block);
+    block.querySelectorAll('.birth-date').forEach(adicionarCalendario);
+    const cpfField = block.querySelector('[data-dependent-cpf]');
+    if (cpfField.value) formatCpfField(cpfField);
+    const birthField = block.querySelector('[data-dependent-birth]');
+    if (birthField.value) validateDependentBirth(birthField, false);
+  }
+  updateChildrenDocumentNote();
+}
+function updateChildrenDocumentNote() {
+  const note = document.querySelector('#childrenDocumentNote');
+  const count = Math.min(20, Math.max(0, Number(dependentCountField.value || 0)));
+  note.classList.toggle('hidden', count === 0);
+  if (count) note.textContent = `A certidão de nascimento de cada filho cadastrado será obrigatória (${count} ${count === 1 ? 'filho' : 'filhos'}).`;
+}
+renderDependentFields();
 
 // CNH substitui conjuntamente RG e documento CPF. Se não houver CNH, ambos são exigidos.
 const documents = [
-  {key:"ctps", title:"Carteira de Trabalho Digital", required:true, crucial:true, help:"Indispensável"},
-  {key:"cnh", title:"CNH (substitui RG e CPF)", required:false, crucial:true, help:"Alternativa: envie RG e CPF abaixo"},
-  {key:"rg", title:"Carteira de Identidade (RG)", required:false, crucial:true, help:"Obrigatório se não enviar CNH"},
-  {key:"cpfDoc", title:"Documento CPF", required:false, crucial:true, help:"Obrigatório se não enviar CNH"},
-  {key:"titulo", title:"Título de Eleitor", required:false, crucial:false, help:"Opcional / conforme solicitação do RH"},
-  {key:"reservista", title:"Certificado de Reservista", required:false, crucial:false, help:"Quando aplicável"},
-  {key:"certidao", title:"Certidão de nascimento ou casamento", required:true, crucial:true, help:"Indispensável"},
-  {key:"enderecoDoc", title:"Comprovante de endereço (luz ou telefone)", required:true, crucial:true, help:"Indispensável"},
-  {key:"foto", title:"Foto 3x4 atual", required:true, crucial:true, help:"Indispensável"}
+  {key:"ctps", title:"Carteira de Trabalho", required:true, help:"Obrigatória"},
+  {key:"cnh", title:"Carteira Nacional de Habilitação (CNH)", required:false, help:"Opcional; ao enviar, substitui RG e documento CPF"},
+  {key:"rg", title:"Carteira de Identidade (RG)", required:false, help:"Obrigatório enquanto a CNH não for enviada"},
+  {key:"cpfDoc", title:"Documento CPF", required:false, help:"Obrigatório enquanto a CNH não for enviada"},
+  {key:"titulo", title:"Título de Eleitor", required:true, help:"Obrigatório"},
+  {key:"reservista", title:"Certificado de Reservista", required:false, help:"Quando aplicável"},
+  {key:"certidao", title:"Certidão de casamento", required:true, help:"Obrigatória para pessoas casadas"},
+  {key:"enderecoDoc", title:"Comprovante de endereço (luz ou telefone)", required:true, help:"Obrigatório"},
+  {key:"foto", title:"Foto 3x4 atual", required:true, help:"Obrigatória"}
 ];
 
+function documentoObrigatorio(doc) {
+  if (doc.key === 'reservista') return form.elements.sexo.value === 'Masculino';
+  if (doc.key === 'certidao') return form.elements.estadoCivil.value === 'Casado(a)';
+  if (doc.key === 'rg' || doc.key === 'cpfDoc') return !uploadedKeys.has('cnh');
+  return doc.required;
+}
 function renderOneDocument(doc) {
   const item = document.createElement("div");
   item.className = "upload-item";
   item.dataset.doc = doc.key;
-  item.innerHTML = `<span class="upload-copy"><strong>${doc.title}</strong><small>${doc.help}</small><span class="file-status" id="status-${doc.key}">Nenhum arquivo selecionado</span><span class="file-progress"><span id="bar-${doc.key}"></span></span></span>
-    <span class="upload-control"><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${doc.title}"><span class="pill ${doc.crucial ? "crucial" : "optional"}">${doc.crucial ? "Crucial" : "Opcional"}</span></span>`;
+  const required = documentoObrigatorio(doc);
+  item.innerHTML = `<span class="upload-copy"><strong>${escapeHtml(doc.title)}</strong><small>${escapeHtml(doc.help)}</small><span class="file-status" id="status-${doc.key}">Nenhum arquivo selecionado</span></span>
+    <span class="upload-control"><label class="file-picker"><span class="file-picker-button">Selecionar arquivo</span><span class="file-picker-name" id="filename-${doc.key}">Nenhum arquivo escolhido</span><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${escapeHtml(doc.title)}"></label><span class="pill ${required ? "required" : "optional"}">${required ? "Obrigatório" : "Opcional"}</span></span>`;
   uploadList.appendChild(item);
   const existing = driveDocuments.get(doc.key);
   if (existing) {
     item.classList.add("file-ready");
     const status = item.querySelector(`#status-${doc.key}`);
-    const bar = item.querySelector(`#bar-${doc.key}`);
     if (status) status.textContent = `✓ VERIFICADO — documento já salvo no Drive: ${existing.nome}`;
-    if (bar) bar.style.width = "100%";
+    item.querySelector(`#filename-${doc.key}`).textContent = existing.nome || 'Arquivo já salvo';
   }
   item.querySelector("input").addEventListener("change", event => {
-    const file = event.target.files[0], status = document.querySelector(`#status-${doc.key}`), bar = document.querySelector(`#bar-${doc.key}`);
+    const file = event.target.files[0], status = document.querySelector(`#status-${doc.key}`), fileName = document.querySelector(`#filename-${doc.key}`);
     item.classList.remove("file-error", "file-ready");
-    if (!file) { status.textContent = "Nenhum arquivo selecionado"; bar.style.width = "0%"; uploadedKeys.delete(doc.key); updateMissingSummary(); updateSubmitVisibility(); return; }
+    if (!file) { status.textContent = "Nenhum arquivo selecionado"; fileName.textContent = "Nenhum arquivo escolhido"; uploadedKeys.delete(doc.key); updateDocumentRequirements(); updateMissingSummary(); updateSubmitVisibility(); return; }
     const allowed = ["application/pdf", "image/jpeg", "image/png"];
     const maxBytes = (window.APP_CONFIG?.MAX_FILE_MB || 5) * 1024 * 1024;
-    if (!allowed.includes(file.type)) { event.target.value = ""; status.textContent = "Formato inválido. Use PDF, JPG ou PNG."; item.classList.add("file-error"); bar.style.width = "0%"; return; }
-    if (file.size > maxBytes) { event.target.value = ""; status.textContent = `Arquivo maior que ${window.APP_CONFIG?.MAX_FILE_MB || 5} MB.`; item.classList.add("file-error"); bar.style.width = "0%"; return; }
-    status.textContent = `${file.name} · ${formatBytes(file.size)} · iniciando upload…`; bar.style.width = "0%"; item.classList.add("file-ready");
+    if (!allowed.includes(file.type)) { event.target.value = ""; fileName.textContent = "Nenhum arquivo escolhido"; status.textContent = "Formato inválido. Use PDF, JPG ou PNG."; item.classList.add("file-error"); return; }
+    if (file.size > maxBytes) { event.target.value = ""; fileName.textContent = "Nenhum arquivo escolhido"; status.textContent = `Arquivo maior que ${window.APP_CONFIG?.MAX_FILE_MB || 5} MB.`; item.classList.add("file-error"); return; }
+    fileName.textContent = file.name;
+    status.textContent = `${file.name} · ${formatBytes(file.size)} · iniciando upload…`; item.classList.add("file-ready");
     uploadSelectedDocument(doc, file, event.target).catch(error => {
-      status.textContent = "Falha no envio: " + (error.message || "erro desconhecido"); item.classList.add("file-error"); uploadingKeys.delete(doc.key);
+      event.target.value = "";
+      status.textContent = "Falha no envio: " + (error.message || "erro desconhecido"); fileName.textContent = "Nenhum arquivo escolhido"; item.classList.add("file-error"); uploadingKeys.delete(doc.key);
+      updateDocumentRequirements();
       updateMissingSummary(); updateSubmitVisibility();
       const ref = criarReferenciaErro();
       showStatus(`ERRO ${ref}: Não foi possível enviar ${doc.title}: ${error.message || "verifique a configuração do Drive"}. Os arquivos que já estão no Drive serão mantidos. Copie este código e encaminhe à equipe de TI.`, true);
     });
+    updateDocumentRequirements();
     updateMissingSummary();
   });
 }
 function renderDocuments() {
   uploadList.innerHTML = "";
-  documents.forEach(renderOneDocument);
-  const count = Math.min(20, Math.max(0, Number(document.querySelector('#quantidadeFilhos')?.value || 0)));
-  for (let i = 1; i <= count; i++) renderOneDocument({key:`filho_${i}`, title:`Certidão de nascimento do filho ${i}`, required:true, crucial:true, help:"Obrigatória conforme quantidade informada"});
+  documents.filter(doc => (doc.key !== 'certidao' || documentoObrigatorio(doc)) && (doc.key !== 'reservista' || form.elements.sexo.value === 'Masculino')).forEach(renderOneDocument);
+  const count = Math.min(20, Math.max(0, Number(dependentCountField.value || 0)));
+  for (let i = 1; i <= count; i++) {
+    const childName = String(dependentData.get(i)?.nome || '').trim();
+    const title = childName ? `Certidão de nascimento de ${childName}` : `Certidão de nascimento do dependente`;
+    renderOneDocument({key:`filho_${i}`, title, required:true, help:"Obrigatória conforme quantidade informada"});
+  }
+  updateDocumentRequirements();
 }
 renderDocuments();
-document.querySelector('#quantidadeFilhos').addEventListener('change', async () => {
+function updateDocumentRequirements() {
+  const cnhSent = uploadedKeys.has('cnh');
+  uploadList.querySelectorAll('[data-doc]').forEach(item => {
+    const key = item.dataset.doc;
+    const doc = documents.find(candidate => candidate.key === key) || {key, required:true};
+    const required = documentoObrigatorio(doc);
+    const pill = item.querySelector('.pill');
+    if (pill) {
+      pill.textContent = required ? 'Obrigatório' : 'Opcional';
+      pill.className = `pill ${required ? 'required' : 'optional'}`;
+    }
+    const help = item.querySelector('.upload-copy > small');
+    if (help && (key === 'rg' || key === 'cpfDoc')) help.textContent = cnhSent ? 'Opcional; CNH já enviada' : 'Obrigatório enquanto a CNH não for enviada';
+    if (help && key === 'cnh' && cnhSent) help.textContent = 'CNH já enviada';
+  });
+}
+dependentCountField.addEventListener('input', () => {
+  renderDependentFields();
+  renderDocuments();
+  updateMissingSummary(); updateSubmitVisibility();
+});
+childrenFields.addEventListener('input', event => {
+  if (event.target.matches('[data-dependent-index]')) {
+    const index = Number(event.target.dataset.dependentIndex);
+    const data = dependentData.get(index) || {};
+    data[event.target.dataset.dependentField] = event.target.value;
+    dependentData.set(index, data);
+    if (event.target.dataset.dependentField === 'nome') renderDocuments();
+    updateMissingSummary(); updateSubmitVisibility();
+  }
+});
+dependentCountField.addEventListener('change', async () => {
   renderDocuments();
   try { await refreshDriveDocuments(); } catch (error) { console.warn('Não foi possível atualizar os documentos do Drive:', error); }
   updateMissingSummary(); updateSubmitVisibility();
@@ -151,15 +338,33 @@ function missingFieldsForStep(step) {
     else if (field.required && !field.checkValidity()) missing.push(fieldLabel(field));
   }
   if (step === 1 && document.querySelector("#cpf").value && !cpfValido(document.querySelector("#cpf").value)) missing.push("CPF válido");
+  if (step === 1) {
+    const identity = form.elements.identidadeGenero.value;
+    const race = form.elements.racaCor.value;
+    if (identity === 'Outra identidade de gênero' && !form.elements.outraIdentidadeGenero.value.trim()) missing.push("Descrição da identidade de gênero");
+    if (race === 'Outra' && !form.elements.outraRacaCor.value.trim()) missing.push("Descrição de raça/cor");
+    childrenFields.querySelectorAll('[data-dependent-cpf]').forEach(field => {
+      if (!validarCpfDependente(field)) missing.push('CPF válido e exclusivo para cada dependente');
+    });
+    childrenFields.querySelectorAll('[data-dependent-birth]').forEach(field => {
+      if (!validateDependentBirth(field, false)) missing.push('Data de nascimento válida (menor de 18 anos) para cada dependente');
+    });
+  }
   if (step === 2) {
     const cep = document.querySelector("#cep").value.replace(/\D/g, "");
     if (cep.length !== 8) missing.push("CEP com 8 números");
+    if (form.elements.celular2.value.trim() && !form.elements.contatoCelular2.value.trim()) missing.push("Nome do contato do Celular 2");
   }
   if (step === 3) {
     const selected = key => Boolean(form.elements[key]?.files?.length);
-    documents.filter(d => d.required && !selected(d.key) && !uploadedKeys.has(d.key)).forEach(d => missing.push(d.title));
+    documents.filter(d => documentoObrigatorio(d) && !selected(d.key) && !uploadedKeys.has(d.key)).forEach(d => missing.push(d.title));
     const childCount = Math.min(20, Math.max(0, Number(form.elements.quantidadeFilhos?.value || 0)));
-    for (let i=1; i<=childCount; i++) if (!selected(`filho_${i}`) && !uploadedKeys.has(`filho_${i}`)) missing.push(`Certidão de nascimento do filho ${i}`);
+    for (let i=1; i<=childCount; i++) {
+      if (!selected(`filho_${i}`) && !uploadedKeys.has(`filho_${i}`)) {
+        const childName = String(dependentData.get(i)?.nome || '').trim();
+        missing.push(`Certidão de nascimento de ${childName || 'dependente'}`);
+      }
+    }
     if (form.elements.sexo?.value === "Masculino" && !selected("reservista") && !uploadedKeys.has("reservista")) missing.push("Certificado de Reservista (sexo masculino)");
     if (!(selected("cnh") || uploadedKeys.has("cnh")) && !(selected("rg") || uploadedKeys.has("rg"))) missing.push("CNH ou RG");
     if (!(selected("cnh") || uploadedKeys.has("cnh")) && !(selected("cpfDoc") || uploadedKeys.has("cpfDoc"))) missing.push("CNH ou documento CPF");
@@ -173,7 +378,14 @@ function validateCurrentStep() {
   const missing = missingFieldsForStep(currentStep);
   if (missing.length) {
     const msg = "Para continuar, confira: " + missing.join("; ") + ".";
-    if (currentStep === 3) updateMissingSummary();
+    if (currentStep === 3) {
+      updateMissingSummary();
+      if (missing.includes("Confirmação de leitura do aviso de privacidade")) {
+        const consent = form.querySelector('.consent');
+        consent?.scrollIntoView({behavior:'smooth', block:'center'});
+        form.elements.cientePrivacidade.focus({preventScroll:true});
+      }
+    }
     showStatus(msg, true);
     const first = sections[currentStep - 1].querySelector(":invalid");
     if (first && !first.disabled) first.focus();
@@ -182,6 +394,14 @@ function validateCurrentStep() {
   for (const field of sections[currentStep - 1].querySelectorAll("input,select")) {
     if (field.disabled || field.type === "file" || field.type === "checkbox") continue;
     if (!field.checkValidity()) { field.reportValidity(); field.focus(); return false; }
+  }
+  if (currentStep === 1) {
+    const invalidChildCpf = [...childrenFields.querySelectorAll('[data-dependent-cpf]')].find(field => !validarCpfDependente(field));
+    if (invalidChildCpf) {
+      invalidChildCpf.reportValidity(); invalidChildCpf.focus(); return false;
+    }
+    const invalidChildBirth = [...childrenFields.querySelectorAll('[data-dependent-birth]')].find(field => !validateDependentBirth(field, false));
+    if (invalidChildBirth) { invalidChildBirth.reportValidity(); invalidChildBirth.focus(); return false; }
   }
   if (currentStep === 3) {
     const bad = uploadList.querySelector(".file-error");
@@ -204,10 +424,51 @@ function updateMissingSummary() {
   if (privacyMissing) {
     const consent = form.querySelector(".consent");
     consent?.classList.add("privacy-consent-pulse");
+    const listItem = [...missingSummary.querySelectorAll('li')].find(item => item.textContent.includes('Confirmação de leitura do aviso'));
+    if (listItem) listItem.innerHTML = `<button type="button" class="missing-link" data-go-privacy>${escapeHtml(listItem.textContent)} — ir para o aviso</button>`;
   } else form.querySelector(".consent")?.classList.remove("privacy-consent-pulse");
   updateSubmitVisibility();
 }
+missingSummary.addEventListener('click', event => {
+  if (event.target.closest('[data-go-privacy]')) {
+    const consent = form.querySelector('.consent');
+    consent?.scrollIntoView({behavior:'smooth', block:'center'});
+    form.elements.cientePrivacidade.focus({preventScroll:true});
+  }
+});
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function normalizeRecoveredDependents(data) {
+  const normalized = new Map();
+  const lists = [data.filhos, data.dependentes];
+  lists.forEach(list => {
+    if (typeof list === 'string') {
+      try { list = JSON.parse(list); } catch (_) { return; }
+    }
+    if (!Array.isArray(list)) return;
+    list.forEach((dependent, index) => {
+      if (!dependent || typeof dependent !== 'object') return;
+      const childIndex = Number(dependent.indice || dependent.index || index + 1);
+      if (!Number.isInteger(childIndex) || childIndex < 1 || childIndex > 20) return;
+      normalized.set(childIndex, {
+        indice: childIndex,
+        nome: dependent.nome ?? dependent.nomeCompleto ?? dependent.name ?? '',
+        cpf: dependent.cpf ?? dependent.documento ?? '',
+        nascimento: dependent.nascimento ?? dependent.dataNascimento ?? dependent.birthDate ?? ''
+      });
+    });
+  });
+  Object.entries(data).forEach(([key, value]) => {
+    const match = key.match(/^(?:filho|dependente)_(\d+)_(nome|nomeCompleto|cpf|nascimento|dataNascimento)$/i);
+    if (!match) return;
+    const childIndex = Number(match[1]);
+    if (!Number.isInteger(childIndex) || childIndex < 1 || childIndex > 20) return;
+    const child = normalized.get(childIndex) || {indice:childIndex, nome:'', cpf:'', nascimento:''};
+    const field = /^(?:nome|nomeCompleto)$/i.test(match[2]) ? 'nome' : (/^cpf$/i.test(match[2]) ? 'cpf' : 'nascimento');
+    if (value !== undefined && value !== null && String(value).trim()) child[field] = String(value);
+    normalized.set(childIndex, child);
+  });
+  return [...normalized.values()].sort((a, b) => a.indice - b.indice);
+}
 function criarReferenciaErro() { return "ADM-" + new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0,14) + "-" + Math.random().toString(36).slice(2,6).toUpperCase(); }
 function showStatus(message, isError) {
   statusMessage.textContent = message;
@@ -254,12 +515,97 @@ nextBtn.addEventListener("click", async () => {
 backBtn.addEventListener("click", () => setStep(Math.max(currentStep - 1, 1)));
 
 document.querySelector('[name="estadoCivil"]').addEventListener('change', event => {
-  const cert = documents.find(d => d.key === 'certidao');
-  if (cert) cert.title = event.target.value === 'Casado(a)' ? 'Certidão de casamento' : 'Certidão de nascimento ou casamento';
   renderDocuments();
   refreshDriveDocuments().catch(error => console.warn('Falha ao atualizar documentos após alteração do estado civil:', error));
   updateMissingSummary(); updateSubmitVisibility();
 });
+document.querySelector('[name="sexo"]').addEventListener('change', () => {
+  renderDocuments();
+  updateMissingSummary();
+  updateSubmitVisibility();
+});
+document.querySelector('#identidadeGenero').addEventListener('change', event => {
+  const descriptions = {
+    'Homem cisgênero':'Identifica-se como homem, conforme o sexo registrado ao nascer.',
+    'Mulher cisgênero':'Identifica-se como mulher, conforme o sexo registrado ao nascer.',
+    'Homem transgênero':'Identifica-se como homem, com sexo feminino registrado ao nascer.',
+    'Mulher transgênero':'Identifica-se como mulher, com sexo masculino registrado ao nascer.',
+    'Pessoa não binária':'Não se identifica exclusivamente como homem ou mulher.',
+    'Outra identidade de gênero':'Informe como você descreve sua identidade de gênero.'
+  };
+  const other = event.target.value === 'Outra identidade de gênero';
+  document.querySelector('#outraIdentidadeWrap').classList.toggle('hidden', !other);
+  form.elements.outraIdentidadeGenero.required = other;
+  if (!other) form.elements.outraIdentidadeGenero.value = '';
+  document.querySelector('#identidadeGeneroHelp').textContent = descriptions[event.target.value] || 'Selecione a opção que melhor representa você.';
+});
+document.querySelector('#racaCor').addEventListener('change', event => {
+  const other = event.target.value === 'Outra';
+  document.querySelector('#outraRacaWrap').classList.toggle('hidden', !other);
+  form.elements.outraRacaCor.required = other;
+  if (!other) form.elements.outraRacaCor.value = '';
+});
+document.querySelector('#addPhone2').addEventListener('click', () => {
+  document.querySelector('#phone2Wrap').classList.remove('hidden');
+  document.querySelector('#addPhone2').classList.add('hidden');
+  document.querySelector('#celular2').focus();
+});
+const mapWidget = document.querySelector('#mapWidget');
+const mapDragHandle = document.querySelector('#mapDragHandle');
+let mapDragState = null;
+mapDragHandle.addEventListener('pointerdown', event => {
+  if (event.button !== 0) return;
+  const bounds = mapWidget.getBoundingClientRect();
+  mapWidget.style.left = `${bounds.left}px`;
+  mapWidget.style.top = `${bounds.top}px`;
+  mapWidget.style.right = 'auto';
+  mapWidget.style.bottom = 'auto';
+  mapDragState = {pointerId:event.pointerId, offsetX:event.clientX - bounds.left, offsetY:event.clientY - bounds.top};
+  event.preventDefault();
+});
+document.addEventListener('pointermove', event => {
+  if (!mapDragState || event.pointerId !== mapDragState.pointerId) return;
+  const bounds = mapWidget.getBoundingClientRect();
+  const left = Math.max(0, Math.min(window.innerWidth - bounds.width, event.clientX - mapDragState.offsetX));
+  const top = Math.max(0, Math.min(window.innerHeight - Math.min(48, bounds.height), event.clientY - mapDragState.offsetY));
+  mapWidget.style.left = `${left}px`;
+  mapWidget.style.top = `${top}px`;
+});
+function finishMapDrag(event) {
+  if (!mapDragState || event.pointerId !== mapDragState.pointerId) return;
+  mapDragState = null;
+  if (mapDragHandle.hasPointerCapture(event.pointerId)) mapDragHandle.releasePointerCapture(event.pointerId);
+}
+document.addEventListener('pointerup', finishMapDrag);
+document.addEventListener('pointercancel', finishMapDrag);
+mapDragHandle.addEventListener('keydown', event => {
+  const movement = {ArrowLeft:[-16,0], ArrowRight:[16,0], ArrowUp:[0,-16], ArrowDown:[0,16]}[event.key];
+  if (!movement) return;
+  const bounds = mapWidget.getBoundingClientRect();
+  mapWidget.style.left = `${Math.max(0, Math.min(window.innerWidth - bounds.width, bounds.left + movement[0]))}px`;
+  mapWidget.style.top = `${Math.max(0, Math.min(window.innerHeight - Math.min(48, bounds.height), bounds.top + movement[1]))}px`;
+  mapWidget.style.right = 'auto';
+  mapWidget.style.bottom = 'auto';
+  event.preventDefault();
+});
+window.addEventListener('resize', () => {
+  const bounds = mapWidget.getBoundingClientRect();
+  mapWidget.style.left = `${Math.max(0, Math.min(window.innerWidth - bounds.width, bounds.left))}px`;
+  mapWidget.style.top = `${Math.max(0, Math.min(window.innerHeight - Math.min(48, bounds.height), bounds.top))}px`;
+  mapWidget.style.right = 'auto';
+  mapWidget.style.bottom = 'auto';
+});
+document.querySelectorAll('#celular, #celular2').forEach(field => field.addEventListener('input', event => {
+  let v = event.target.value.replace(/\D/g, "").slice(0, 11);
+  if (v.length > 10) v = v.replace(/(\d{2})(\d{5})(\d{1,4})/, "($1) $2-$3");
+  else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, "($1) $2-$3");
+  else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, "($1) $2");
+  event.target.value = v;
+  if (event.target.id === 'celular2') {
+    form.elements.contatoCelular2.required = Boolean(v);
+    updateSubmitVisibility();
+  }
+}));
 document.querySelector("#pcd").addEventListener("change", event => {
   document.querySelector("#deficienciaWrap").classList.toggle("hidden", event.target.value !== "Sim");
 });
@@ -329,19 +675,48 @@ birthDateForm?.addEventListener('submit', async event => {
     const verified = await postAction({acao:'validarIdentidadeCadastro', cpf:lookupCpfPending, nascimento:birth});
     cadastroId = verified.cadastroId;
     const dados = verified.dados || {};
+    childrenFields.innerHTML = '';
+    dependentData.clear();
+    const savedChildren = normalizeRecoveredDependents(dados);
+    const expectedChildren = Number(dados.quantidadeFilhos);
+    if (Number.isInteger(expectedChildren) && expectedChildren > savedChildren.length) {
+      throw new Error(`O servidor informou ${expectedChildren} dependentes, mas retornou apenas ${savedChildren.length} registro(s). A atualização do Apps Script para a versão 0.6.6 é necessária para recuperar nome, CPF e data de nascimento de todos.`);
+    }
+    savedChildren.forEach((child, index) => {
+      const childIndex = Number(child.indice || index + 1);
+      if (Number.isInteger(childIndex) && childIndex > 0 && childIndex <= 20) {
+        dependentData.set(childIndex, {
+          nome: child.nome == null ? '' : String(child.nome),
+          cpf: child.cpf == null ? '' : String(child.cpf),
+          nascimento: child.nascimento == null ? '' : formatDateBrazilian(child.nascimento)
+        });
+      }
+    });
+    const inferredCount = Math.max(0, ...dependentData.keys());
+    const savedCount = Number(dados.quantidadeFilhos);
+    dependentCountField.value = String(Math.min(20, Math.max(Number.isInteger(savedCount) ? savedCount : 0, inferredCount)));
+    renderDependentFields();
     Object.entries(dados).forEach(([key, value]) => {
-      const field = form.elements[key];
+      if (key === 'filhos' || /^filho_\d+_(nome|cpf|nascimento)$/.test(key)) return;
+      const field = form.elements[key] || form.querySelector(`[name="${CSS.escape(key)}"]`);
       if (!field || key === 'cientePrivacidade') return;
       if (key === 'cpf') field.value = formatCpf(value);
-      else if (key === 'nascimento') field.value = formatDateBrazilian(value);
+      else if (key === 'nascimento' || /^filho_\d+_nascimento$/.test(key)) field.value = formatDateBrazilian(value);
       else if (field instanceof RadioNodeList) { /* campos agrupados não são usados neste formulário */ }
+      else if (key === 'identidadeGenero' && value === 'Outra identidade') field.value = 'Outra identidade de gênero';
       else field.value = value == null ? '' : String(value);
     });
+    form.querySelectorAll('.birth-date').forEach(sincronizarCalendario);
+    saveDependentValues();
+    childrenFields.querySelectorAll('[data-dependent-cpf]').forEach(formatCpfField);
+    childrenFields.querySelectorAll('[data-dependent-cpf]').forEach(field => validarCpfDependente(field));
+    childrenFields.querySelectorAll('[data-dependent-birth]').forEach(field => validateDependentBirth(field, false));
+    renderDocuments();
     form.elements.cientePrivacidade.checked = false;
     document.querySelector('#pcd').dispatchEvent(new Event('change', {bubbles:true}));
+    document.querySelector('#identidadeGenero').dispatchEvent(new Event('change', {bubbles:true}));
+    document.querySelector('#racaCor').dispatchEvent(new Event('change', {bubbles:true}));
     updateAddressLock();
-    const certidaoDoc = documents.find(d => d.key === 'certidao');
-    if (certidaoDoc) certidaoDoc.title = form.elements.estadoCivil.value === 'Casado(a)' ? 'Certidão de casamento' : 'Certidão de nascimento ou casamento';
     uploadedKeys.clear();
     driveDocuments.clear();
     renderDocuments();
@@ -349,10 +724,16 @@ birthDateForm?.addEventListener('submit', async event => {
       driveDocuments.set(doc.chave, doc);
       uploadedKeys.add(doc.chave);
       const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
-      const bar = document.querySelector(`#bar-${CSS.escape(doc.chave)}`);
+      const fileName = document.querySelector(`#filename-${CSS.escape(doc.chave)}`);
       if (status) status.textContent = `✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`;
-      if (bar) bar.style.width = '100%';
+      if (fileName) fileName.textContent = doc.nome || 'Arquivo já salvo';
     });
+    updateDocumentRequirements();
+    if (form.elements.celular2.value || form.elements.contatoCelular2.value) {
+      document.querySelector('#phone2Wrap').classList.remove('hidden');
+      document.querySelector('#addPhone2').classList.add('hidden');
+    }
+    form.elements.contatoCelular2.required = Boolean(form.elements.celular2.value);
     updateMissingSummary(); updateSubmitVisibility();
     birthDateDialog.close();
     setStep(1);
@@ -365,10 +746,10 @@ birthDateForm?.addEventListener('submit', async event => {
 });
 function formatDateBrazilian(value) {
   const v = String(value || '').trim();
-  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
-  const br = v.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-  if (br) return `${br[1]}/${br[2]}/${br[3]}`;
+  const br = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (br) return `${br[1].padStart(2, '0')}/${br[2].padStart(2, '0')}/${br[3]}`;
   return v;
 }
 function formatCpf(value) {
@@ -415,14 +796,6 @@ document.querySelector("#cep").addEventListener("blur", async () => {
     msg.textContent = (error.message || "Não foi possível consultar o CEP.") + " Os campos estão liberados para preenchimento manual.";
   }
 });
-document.querySelector("#celular").addEventListener("input", event => {
-  let v = event.target.value.replace(/\D/g, "").slice(0, 11);
-  if (v.length > 10) v = v.replace(/(\d{2})(\d{5})(\d{1,4})/, "($1) $2-$3");
-  else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, "($1) $2-$3");
-  else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, "($1) $2");
-  event.target.value = v;
-});
-
 function fileToBase64(file, onProgress) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -436,6 +809,7 @@ function collectFormData() {
   const data = {};
   for (const [key, value] of new FormData(form).entries()) if (!(value instanceof File)) data[key] = value;
   data.cientePrivacidade = Boolean(form.elements.cientePrivacidade?.checked);
+  data.filhos = [...dependentData.entries()].filter(([index]) => index <= Number(dependentCountField.value || 0)).map(([index, child]) => ({indice:index, nome:child.nome || '', cpf:child.cpf || '', nascimento:child.nascimento || ''}));
   return data;
 }
 async function postAction(payload) {
@@ -460,10 +834,11 @@ async function ensureCadastroSession() {
       driveDocuments.set(doc.chave, doc);
       uploadedKeys.add(doc.chave);
       const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
-      const bar = document.querySelector(`#bar-${CSS.escape(doc.chave)}`);
+      const fileName = document.querySelector(`#filename-${CSS.escape(doc.chave)}`);
       if (status) status.textContent = `✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`;
-      if (bar) bar.style.width = "100%";
+      if (fileName) fileName.textContent = doc.nome || 'Arquivo já salvo';
     });
+    updateDocumentRequirements();
     return cadastroId;
   })();
   try { return await sessionPromise; }
@@ -474,39 +849,39 @@ async function refreshDriveDocuments() {
   const data = collectFormData();
   const result = await postAction({acao:"listarDocumentos", cadastroId, cpf:data.cpf});
   driveDocuments.clear();
+  uploadedKeys.clear();
   (result.documentos || []).forEach(doc => { driveDocuments.set(doc.chave, doc); uploadedKeys.add(doc.chave); });
   uploadList.querySelectorAll('[data-doc]').forEach(item => {
     const key = item.dataset.doc, doc = driveDocuments.get(key);
     if (!doc || uploadingKeys.has(key)) return;
-    const status = item.querySelector(`#status-${CSS.escape(key)}`), bar = item.querySelector(`#bar-${CSS.escape(key)}`);
+    const status = item.querySelector(`#status-${CSS.escape(key)}`), fileName = item.querySelector(`#filename-${CSS.escape(key)}`);
     if (status) status.textContent = `✓ VERIFICADO — documento já salvo no Drive: ${doc.nome}`;
-    if (bar) bar.style.width = '100%';
+    if (fileName) fileName.textContent = doc.nome || 'Arquivo já salvo';
     item.classList.add('file-ready');
   });
+  updateDocumentRequirements();
 }
 async function uploadSelectedDocument(doc, file, input) {
   if (uploadingKeys.has(doc.key)) return;
   uploadingKeys.add(doc.key); uploadedKeys.delete(doc.key);
   updateSubmitVisibility();
   const status = document.querySelector(`#status-${doc.key}`);
-  const bar = document.querySelector(`#bar-${doc.key}`);
   try {
     setOverall(5, `Preparando pasta e enviando ${doc.title}…`);
     const id = await ensureCadastroSession();
     status.textContent = `Preparando ${file.name}…`;
-    const base64 = await fileToBase64(file, pct => {
-      bar.style.width = `${Math.round(pct)}%`;
-      setOverall(Math.min(90, pct * 0.9), `Enviando documento: ${doc.title}`);
-    });
+    const base64 = await fileToBase64(file, pct => setOverall(Math.min(90, pct * 0.9), `Enviando documento: ${doc.title}`));
     status.textContent = `Enviando ao Drive: ${file.name}…`;
     const data = collectFormData();
     const result = await postAction({acao:"enviarDocumento", cadastroId:id, cpf:data.cpf, documento:{chave:doc.key,nome:doc.title,nomeArquivo:file.name,mimeType:file.type,tamanho:file.size,base64}});
     uploadedKeys.add(doc.key);
     driveDocuments.set(doc.key, {chave:doc.key, nome:result.nome || file.name});
     status.textContent = `✓ VERIFICADO — enviado ao Drive: ${file.name}`;
-    bar.style.width = "100%";
+    const fileName = document.querySelector(`#filename-${doc.key}`);
+    if (fileName) fileName.textContent = result.nome || file.name;
     document.querySelector(`[data-doc="${doc.key}"]`)?.classList.remove("file-error");
     setOverall(100, `${doc.title} salvo na pasta do funcionário.`);
+    updateDocumentRequirements();
     (result.documentos || []).forEach(saved => uploadedKeys.add(saved.chave));
   } catch (error) {
     try { await refreshDriveDocuments(); } catch (_) { /* Mantém a mensagem original do erro. */ }
@@ -542,7 +917,13 @@ form.addEventListener("submit", async event => {
     setOverall(100, "Cadastro concluído com sucesso.");
     showStatus("Cadastro concluído. Os dados e documentos foram salvos. Você será direcionado ao início para um novo cadastro.", false);
     form.reset(); uploadedKeys.clear(); driveDocuments.clear(); uploadingKeys.clear(); cadastroId = null; sessionPromise = null; lastAutoLookupCpf = '';
+    dependentData.clear(); renderDependentFields();
     document.querySelector('#quantidadeFilhos').value = '0';
+    document.querySelector('#phone2Wrap').classList.add('hidden');
+    document.querySelector('#addPhone2').classList.remove('hidden');
+    form.elements.contatoCelular2.required = false;
+    document.querySelector('#identidadeGenero').dispatchEvent(new Event('change', {bubbles:true}));
+    document.querySelector('#racaCor').dispatchEvent(new Event('change', {bubbles:true}));
     document.querySelector('#pcd').dispatchEvent(new Event('change', {bubbles:true}));
     document.querySelector('[name="estadoCivil"]').dispatchEvent(new Event('change', {bubbles:true}));
     renderDocuments(); updateAddressLock();
