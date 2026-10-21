@@ -702,6 +702,7 @@ birthDateForm?.addEventListener('submit', async event => {
       if (!field || key === 'cientePrivacidade') return;
       if (key === 'cpf') field.value = formatCpf(value);
       else if (key === 'nascimento' || /^filho_\d+_nascimento$/.test(key)) field.value = formatDateBrazilian(value);
+      else if (key === 'dependentesFamilia' || key === 'dependentesIR') field.value = normalizeYesNo(value);
       else if (field instanceof RadioNodeList) { /* campos agrupados não são usados neste formulário */ }
       else if (key === 'identidadeGenero' && value === 'Outra identidade') field.value = 'Outra identidade de gênero';
       else field.value = value == null ? '' : String(value);
@@ -751,6 +752,14 @@ function formatDateBrazilian(value) {
   const br = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
   if (br) return `${br[1].padStart(2, '0')}/${br[2].padStart(2, '0')}/${br[3]}`;
   return v;
+}
+function normalizeYesNo(value) {
+  const normalized = String(value ?? '').trim().toLocaleLowerCase('pt-BR');
+  if (['sim', 'true', 'yes'].includes(normalized)) return 'Sim';
+  if (['não', 'nao', 'false', 'no', '0'].includes(normalized)) return 'Não';
+  const numeric = Number(normalized);
+  if (Number.isFinite(numeric) && numeric > 0) return 'Sim';
+  return '';
 }
 function formatCpf(value) {
   const digits = String(value || '').replace(/\D/g, '').slice(0, 11);

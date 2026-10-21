@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173b67">
   <title>Cadastro Admissional | Senior</title>
-  <link rel="stylesheet" href="styles.css?v=0.6.6">
+  <link rel="stylesheet" href="styles.css?v=0.6.14">
 </head>
 <body>
   <header class="site-header">
@@ -82,8 +82,12 @@
             </div>
           </div>
           <label>E-mail *<input name="email" type="email" required maxlength="180" autocomplete="email" placeholder="voce@exemplo.com.br"></label>
-          <label>Dependentes para salário-família<input name="dependentesFamilia" type="number" min="0" max="30" value="0"></label>
-          <label>Dependentes para Imposto de Renda<input name="dependentesIR" type="number" min="0" max="30" value="0"></label>
+          <label>Possui dependentes para salário-família?
+            <select name="dependentesFamilia"><option value="">Selecione</option><option value="Sim">Sim</option><option value="Não">Não</option></select>
+          </label>
+          <label>Possui dependentes para Imposto de Renda?
+            <select name="dependentesIR"><option value="">Selecione</option><option value="Sim">Sim</option><option value="Não">Não</option></select>
+          </label>
         </div>
         <p class="inline-note" id="cepMessage" aria-live="polite">Digite os 8 números do CEP para liberar os campos de endereço.</p>
       </section>
@@ -137,6 +141,6 @@
     <svg class="wa-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.2 1.6 6L0 24l6.4-1.7a11.8 11.8 0 0 0 5.7 1.5h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.5ZM12.1 21.8c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-3.8 1 1-3.7-.2-.4a9.8 9.8 0 1 1 8.5 4.7Zm5.4-7.3c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.2s-.8.9-1 1.1c-.2.2-.4.2-.7.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.5-.6.2-.5c.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 2 3.1 4.9 4.3.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 1.9-1.3.2-.6.2-1.2.2-1.3s-.2-.2-.5-.4Z"/></svg>
   </a>
   <script src="config.js?v=0.6.6"></script>
-  <script src="app.js?v=0.6.6"></script>
+  <script src="app.js?v=0.6.14"></script>
 </body>
 </html>
