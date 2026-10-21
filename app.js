@@ -18,6 +18,31 @@ let cadastroId = null;
 let sessionPromise = null;
 const uploadedKeys = new Set();
 const uploadingKeys = new Set();
+const driveDocuments = new Map();
+let lastAutoLookupCpf = "";
+let lookupInProgress = false;
+
+function formatarDataDigitada(input) {
+  let digits = String(input.value || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length > 4) digits = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+  else if (digits.length > 2) digits = digits.slice(0, 2) + '/' + digits.slice(2);
+  input.value = digits;
+}
+function dataBrasileiraValida(value) {
+  const m = String(value || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return false;
+  const d = Number(m[1]), mo = Number(m[2]), y = Number(m[3]);
+  const date = new Date(y, mo - 1, d);
+  return date.getFullYear() === y && date.getMonth() === mo - 1 && date.getDate() === d;
+}
+[document.querySelector('input[name="nascimento"]'), document.querySelector('#lookupBirthDate')].filter(Boolean).forEach(input => {
+  input.addEventListener('input', () => formatarDataDigitada(input));
+  input.addEventListener('blur', () => {
+    if (input.value && !dataBrasileiraValida(input.value)) input.setCustomValidity('Informe uma data válida no formato dd/mm/aaaa.');
+    else input.setCustomValidity('');
+  });
+  input.addEventListener('input', () => input.setCustomValidity(''));
+});
 
 // CNH substitui conjuntamente RG e documento CPF. Se não houver CNH, ambos são exigidos.
 const documents = [
@@ -39,6 +64,14 @@ function renderOneDocument(doc) {
   item.innerHTML = `<span class="upload-copy"><strong>${doc.title}</strong><small>${doc.help}</small><span class="file-status" id="status-${doc.key}">Nenhum arquivo selecionado</span><span class="file-progress"><span id="bar-${doc.key}"></span></span></span>
     <span class="upload-control"><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${doc.title}"><span class="pill ${doc.crucial ? "crucial" : "optional"}">${doc.crucial ? "Crucial" : "Opcional"}</span></span>`;
   uploadList.appendChild(item);
+  const existing = driveDocuments.get(doc.key);
+  if (existing) {
+    item.classList.add("file-ready");
+    const status = item.querySelector(`#status-${doc.key}`);
+    const bar = item.querySelector(`#bar-${doc.key}`);
+    if (status) status.textContent = `✓ VERIFICADO — documento já salvo no Drive: ${existing.nome}`;
+    if (bar) bar.style.width = "100%";
+  }
   item.querySelector("input").addEventListener("change", event => {
     const file = event.target.files[0], status = document.querySelector(`#status-${doc.key}`), bar = document.querySelector(`#bar-${doc.key}`);
     item.classList.remove("file-error", "file-ready");
@@ -64,11 +97,9 @@ function renderDocuments() {
   for (let i = 1; i <= count; i++) renderOneDocument({key:`filho_${i}`, title:`Certidão de nascimento do filho ${i}`, required:true, crucial:true, help:"Obrigatória conforme quantidade informada"});
 }
 renderDocuments();
-document.querySelector('#quantidadeFilhos').addEventListener('change', () => {
-  const old = new Map();
-  uploadList.querySelectorAll('[data-doc]').forEach(el => { const input=el.querySelector('input[type=file]'); if(input?.files?.length) old.set(el.dataset.doc,input.files[0]); });
+document.querySelector('#quantidadeFilhos').addEventListener('change', async () => {
   renderDocuments();
-  old.forEach((file,key) => { const input=uploadList.querySelector(`[data-doc="${key}"] input[type=file]`); if(input) { /* O navegador não permite restaurar FileList por segurança. Arquivos já enviados permanecem no Drive. */ } });
+  try { await refreshDriveDocuments(); } catch (error) { console.warn('Não foi possível atualizar os documentos do Drive:', error); }
   updateMissingSummary(); updateSubmitVisibility();
 });
 
@@ -142,6 +173,7 @@ function validateCurrentStep() {
   const missing = missingFieldsForStep(currentStep);
   if (missing.length) {
     const msg = "Para continuar, confira: " + missing.join("; ") + ".";
+    if (currentStep === 3) updateMissingSummary();
     showStatus(msg, true);
     const first = sections[currentStep - 1].querySelector(":invalid");
     if (first && !first.disabled) first.focus();
@@ -159,9 +191,20 @@ function validateCurrentStep() {
 }
 function updateMissingSummary() {
   const missing = missingFieldsForStep(3);
-  if (!missing.length) { missingSummary.classList.add("hidden"); missingSummary.textContent = ""; return; }
+  if (!missing.length) {
+    missingSummary.classList.add("hidden"); missingSummary.textContent = "";
+    missingSummary.classList.remove("privacy-alert-pulse");
+    form.querySelector(".consent")?.classList.remove("privacy-consent-pulse");
+    return;
+  }
   missingSummary.classList.remove("hidden");
   missingSummary.innerHTML = `<strong>Antes de enviar, ainda falta:</strong><ul>${missing.map(x => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`;
+  const privacyMissing = missing.includes("Confirmação de leitura do aviso de privacidade");
+  missingSummary.classList.toggle("privacy-alert-pulse", privacyMissing);
+  if (privacyMissing) {
+    const consent = form.querySelector(".consent");
+    consent?.classList.add("privacy-consent-pulse");
+  } else form.querySelector(".consent")?.classList.remove("privacy-consent-pulse");
   updateSubmitVisibility();
 }
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -213,7 +256,9 @@ backBtn.addEventListener("click", () => setStep(Math.max(currentStep - 1, 1)));
 document.querySelector('[name="estadoCivil"]').addEventListener('change', event => {
   const cert = documents.find(d => d.key === 'certidao');
   if (cert) cert.title = event.target.value === 'Casado(a)' ? 'Certidão de casamento' : 'Certidão de nascimento ou casamento';
-  renderDocuments(); updateMissingSummary(); updateSubmitVisibility();
+  renderDocuments();
+  refreshDriveDocuments().catch(error => console.warn('Falha ao atualizar documentos após alteração do estado civil:', error));
+  updateMissingSummary(); updateSubmitVisibility();
 });
 document.querySelector("#pcd").addEventListener("change", event => {
   document.querySelector("#deficienciaWrap").classList.toggle("hidden", event.target.value !== "Sim");
@@ -227,39 +272,56 @@ document.querySelector("#cpf").addEventListener("input", event => {
   event.target.setCustomValidity("");
   document.querySelector("#cpfMessage").textContent = "O CPF será validado ao sair deste campo.";
   document.querySelector("#cpfMessage").className = "field-message";
+  if (v.replace(/\D/g, '').length === 11 && cpfValido(v)) consultarCpfAutomaticamente(v);
+  else if (v.replace(/\D/g, '').length < 11) lastAutoLookupCpf = '';
 });
 document.querySelector("#cpf").addEventListener("blur", () => validateCpf(true));
 document.querySelector("#cpf").addEventListener("keydown", event => { if (event.key === "Tab") validateCpf(true); });
 const birthDateDialog = document.querySelector('#birthDateDialog');
 const birthDateForm = document.querySelector('#birthDateForm');
 let lookupCpfPending = '';
-document.querySelector('#lookupCpfBtn')?.addEventListener('click', async () => {
-  if (!validateCpf(true)) return;
-  const btn = document.querySelector('#lookupCpfBtn');
-  btn.disabled = true;
-  const cpf = document.querySelector('#cpf').value;
+async function consultarCpfAutomaticamente(cpfFormatado) {
+  const cpf = String(cpfFormatado || '').replace(/\D/g, '');
+  if (cpf.length !== 11 || !cpfValido(cpf) || cpf === lastAutoLookupCpf || lookupInProgress) return;
+  lastAutoLookupCpf = cpf;
+  lookupInProgress = true;
   try {
-    setOverall(8, 'Consultando se já existe cadastro para este CPF…');
+    setOverall(8, 'Verificando se já existe cadastro para este CPF…');
     const found = await postAction({acao:'consultarCpf', cpf});
-    if (!found.encontrado) { showStatus(found.mensagem || 'Não foi encontrado cadastro anterior.', true); setOverall(0, 'Nenhum cadastro anterior foi localizado.'); return; }
+    if (!found.encontrado) {
+      setOverall(0, 'Nenhum cadastro anterior localizado. Você pode continuar o preenchimento.');
+      document.querySelector('#cpfMessage').textContent = 'CPF válido. Não encontramos cadastro anterior.';
+      return;
+    }
+    const continuar = window.confirm('Já existe um cadastro para este CPF. Deseja continuar e corrigir o cadastro existente?\n\nSim: confirmar a data de nascimento e recuperar dados e documentos.\nNão: cancelar esta consulta.');
+    if (!continuar) {
+      document.querySelector('#cpf').value = '';
+      document.querySelector('#cpf').focus();
+      document.querySelector('#cpfMessage').textContent = 'Consulta cancelada. Digite novamente o CPF para tentar outra vez. Um cadastro existente não será sobrescrito sem confirmação.';
+      lastAutoLookupCpf = '';
+      setOverall(0, 'Consulta de cadastro cancelada.');
+      return;
+    }
     lookupCpfPending = cpf;
     document.querySelector('#lookupBirthDate').value = '';
     document.querySelector('#lookupBirthMessage').textContent = '';
     birthDateDialog.showModal();
     setOverall(0, 'Aguardando confirmação da data de nascimento.');
   } catch (error) {
+    lastAutoLookupCpf = '';
     const ref = criarReferenciaErro();
     showStatus(`ERRO ${ref}: Não foi possível consultar o CPF: ${error.message}. Copie o código e encaminhe à equipe de TI.`, true);
     setOverall(0, 'Falha ao consultar cadastro.');
-  } finally { btn.disabled = false; }
-});
+  } finally { lookupInProgress = false; }
+}
 document.querySelector('#cancelBirthLookup')?.addEventListener('click', () => birthDateDialog.close());
 birthDateForm?.addEventListener('submit', async event => {
   event.preventDefault();
   const birth = document.querySelector('#lookupBirthDate').value;
   const confirmBtn = document.querySelector('#confirmBirthLookup');
   const message = document.querySelector('#lookupBirthMessage');
-  if (!birth || !lookupCpfPending) { message.textContent = 'Informe sua data de nascimento.'; return; }
+  if (!birth || !lookupCpfPending) { message.textContent = 'Informe sua data de nascimento no formato dd/mm/aaaa.'; return; }
+  if (!dataBrasileiraValida(birth)) { message.textContent = 'Data inválida. Digite no formato dd/mm/aaaa, por exemplo 23/02/2000.'; document.querySelector('#lookupBirthDate').focus(); return; }
   confirmBtn.disabled = true;
   message.textContent = 'Validando CPF e data de nascimento com o servidor…';
   setOverall(15, 'Validando CPF e data de nascimento no servidor…');
@@ -271,15 +333,20 @@ birthDateForm?.addEventListener('submit', async event => {
       const field = form.elements[key];
       if (!field || key === 'cientePrivacidade') return;
       if (key === 'cpf') field.value = formatCpf(value);
+      else if (key === 'nascimento') field.value = formatDateBrazilian(value);
       else if (field instanceof RadioNodeList) { /* campos agrupados não são usados neste formulário */ }
       else field.value = value == null ? '' : String(value);
     });
     form.elements.cientePrivacidade.checked = false;
     document.querySelector('#pcd').dispatchEvent(new Event('change', {bubbles:true}));
     updateAddressLock();
-    renderDocuments();
+    const certidaoDoc = documents.find(d => d.key === 'certidao');
+    if (certidaoDoc) certidaoDoc.title = form.elements.estadoCivil.value === 'Casado(a)' ? 'Certidão de casamento' : 'Certidão de nascimento ou casamento';
     uploadedKeys.clear();
+    driveDocuments.clear();
+    renderDocuments();
     (verified.documentos || []).forEach(doc => {
+      driveDocuments.set(doc.chave, doc);
       uploadedKeys.add(doc.chave);
       const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
       const bar = document.querySelector(`#bar-${CSS.escape(doc.chave)}`);
@@ -296,6 +363,14 @@ birthDateForm?.addEventListener('submit', async event => {
     setOverall(0, 'A validação não foi concluída. Confira a data informada.');
   } finally { confirmBtn.disabled = false; }
 });
+function formatDateBrazilian(value) {
+  const v = String(value || '').trim();
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const br = v.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (br) return `${br[1]}/${br[2]}/${br[3]}`;
+  return v;
+}
 function formatCpf(value) {
   const digits = String(value || '').replace(/\D/g, '').slice(0, 11);
   if (digits.length !== 11) return digits;
@@ -382,6 +457,7 @@ async function ensureCadastroSession() {
     const result = await postAction({...data, acao:"iniciarCadastro", origem:window.location.href});
     cadastroId = result.cadastroId;
     (result.documentos || []).forEach(doc => {
+      driveDocuments.set(doc.chave, doc);
       uploadedKeys.add(doc.chave);
       const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
       const bar = document.querySelector(`#bar-${CSS.escape(doc.chave)}`);
@@ -397,12 +473,15 @@ async function refreshDriveDocuments() {
   if (!cadastroId) return;
   const data = collectFormData();
   const result = await postAction({acao:"listarDocumentos", cadastroId, cpf:data.cpf});
-  (result.documentos || []).forEach(doc => {
-    uploadedKeys.add(doc.chave);
-    const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
-    const bar = document.querySelector(`#bar-${CSS.escape(doc.chave)}`);
-    if (status && !uploadingKeys.has(doc.chave)) status.textContent = `✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`;
-    if (bar && !uploadingKeys.has(doc.chave)) bar.style.width = "100%";
+  driveDocuments.clear();
+  (result.documentos || []).forEach(doc => { driveDocuments.set(doc.chave, doc); uploadedKeys.add(doc.chave); });
+  uploadList.querySelectorAll('[data-doc]').forEach(item => {
+    const key = item.dataset.doc, doc = driveDocuments.get(key);
+    if (!doc || uploadingKeys.has(key)) return;
+    const status = item.querySelector(`#status-${CSS.escape(key)}`), bar = item.querySelector(`#bar-${CSS.escape(key)}`);
+    if (status) status.textContent = `✓ VERIFICADO — documento já salvo no Drive: ${doc.nome}`;
+    if (bar) bar.style.width = '100%';
+    item.classList.add('file-ready');
   });
 }
 async function uploadSelectedDocument(doc, file, input) {
@@ -423,6 +502,7 @@ async function uploadSelectedDocument(doc, file, input) {
     const data = collectFormData();
     const result = await postAction({acao:"enviarDocumento", cadastroId:id, cpf:data.cpf, documento:{chave:doc.key,nome:doc.title,nomeArquivo:file.name,mimeType:file.type,tamanho:file.size,base64}});
     uploadedKeys.add(doc.key);
+    driveDocuments.set(doc.key, {chave:doc.key, nome:result.nome || file.name});
     status.textContent = `✓ VERIFICADO — enviado ao Drive: ${file.name}`;
     bar.style.width = "100%";
     document.querySelector(`[data-doc="${doc.key}"]`)?.classList.remove("file-error");
@@ -461,7 +541,7 @@ form.addEventListener("submit", async event => {
     const result = await postAction({...collectFormData(), acao:"concluirCadastro", cadastroId, origem:window.location.href});
     setOverall(100, "Cadastro concluído com sucesso.");
     showStatus("Cadastro concluído. Os dados e documentos foram salvos. Você será direcionado ao início para um novo cadastro.", false);
-    form.reset(); uploadedKeys.clear(); uploadingKeys.clear(); cadastroId = null; sessionPromise = null;
+    form.reset(); uploadedKeys.clear(); driveDocuments.clear(); uploadingKeys.clear(); cadastroId = null; sessionPromise = null; lastAutoLookupCpf = '';
     document.querySelector('#quantidadeFilhos').value = '0';
     document.querySelector('#pcd').dispatchEvent(new Event('change', {bubbles:true}));
     document.querySelector('[name="estadoCivil"]').dispatchEvent(new Event('change', {bubbles:true}));
@@ -480,7 +560,7 @@ form.addEventListener("submit", async event => {
     updateMissingSummary(); updateSubmitVisibility();
   }
 });
-form.addEventListener("change", updateSubmitVisibility);
+form.addEventListener("change", () => { updateMissingSummary(); updateSubmitVisibility(); });
 form.addEventListener("input", updateSubmitVisibility);
 updateAddressLock();
 document.querySelector('#whatsappHelp')?.addEventListener('click', event => {

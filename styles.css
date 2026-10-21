@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 :root{--navy:#993132;--blue:#993132;--blue2:#993132;--ink:#000;--muted:#444;--line:#dedede;--bg:#fff;--white:#fff;--green:#993132;--red:#993132;--amber:#8a5a00}
-*{box-sizing:border-box}body{margin:0;background:#fff;color:#000;font-family:Inter,Arial,sans-serif;font-size:15px;line-height:1.5}
+*{box-sizing:border-box}body{position:relative;isolation:isolate;margin:0;background:#fff;color:#000;font-family:Inter,Arial,sans-serif;font-size:15px;line-height:1.5}
 .site-header{height:76px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 max(calc((100% - 1080px)/2),24px)}
 .brand{display:flex;align-items:center;gap:11px;color:#000}.brand-logo{display:block;width:190px;max-height:52px;object-fit:contain;object-position:left center}.site-header a{font-size:13px;text-decoration:none;color:var(--blue);font-weight:600}
 .page-shell{max-width:860px;margin:42px auto 30px;padding:0 20px}.intro{background:#fff;color:#111827;border-radius:16px;padding:32px 34px 24px;box-shadow:0 12px 30px #173b6718}.eyebrow{font-size:11px;letter-spacing:1.7px;font-weight:800;color:#993132;margin:0 0 8px}.intro h1{font-size:30px;line-height:1.2;margin:0 0 10px;letter-spacing:-.8px}.intro>p:not(.eyebrow){margin:0;max-width:650px;color:#111827;font-size:14px}.progress-wrap{height:5px;background:#ffffff40;border-radius:99px;margin-top:24px;overflow:hidden}.progress-wrap div{height:100%;width:33.33%;background:#993132;border-radius:99px;transition:width .2s}.progress-caption{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:#111827}
@@ -20,3 +20,59 @@ form{background:#fff;border:1px solid var(--line);border-radius:16px;margin-top:
 .global-progress{position:static;z-index:1;box-shadow:0 4px 16px rgba(0,0,0,.08);margin:14px 0 18px}.upload-item.file-ready .file-status{color:#17663a;font-weight:700}.upload-item.file-error .file-status{font-weight:700}
 
 .lookup-dialog{width:min(480px,calc(100% - 32px));border:1px solid #dbe3ec;border-radius:14px;padding:0;box-shadow:0 24px 80px rgba(0,0,0,.28);color:#111827}.lookup-dialog::backdrop{background:rgba(15,23,42,.55)}.lookup-dialog form{padding:24px}.lookup-dialog h2{margin:0 0 10px;font-size:21px;color:#111827}.lookup-dialog p{font-size:13px;line-height:1.55;color:#374151}.lookup-dialog label{display:flex;flex-direction:column;gap:7px;margin-top:18px;font-size:12px;font-weight:700}.lookup-dialog input{min-height:42px;border:1px solid #cbd5e1;border-radius:7px;padding:9px 11px;font:inherit;color:#111827}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.lookup-dialog .btn{min-height:40px}
+
+/* Fundo estático: coloque fundo.jpg na mesma pasta de index.html (frontend). */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:url("./fundo.jpg") center center/cover no-repeat;opacity:.20}
+.privacy-alert-pulse{animation:privacyAlertPulse 1s ease-in-out 0s 5;border-width:2px!important}
+.privacy-consent-pulse{animation:privacyConsentPulse 1s ease-in-out 0s 5;border-radius:8px;outline:2px solid #993132;outline-offset:4px}
+@keyframes privacyAlertPulse{0%,100%{box-shadow:0 0 0 0 rgba(153,49,50,.08);background:#fff7f7}50%{box-shadow:0 0 0 7px rgba(153,49,50,.25);background:#ffe4e4}}
+@keyframes privacyConsentPulse{0%,100%{background:transparent}50%{background:#ffe4e4}}
+
+/* Ajustes de usabilidade para celulares */
+html { -webkit-text-size-adjust: 100%; }
+input, select, button { touch-action: manipulation; }
+input, select { min-width: 0; }
+@media (max-width: 640px) {
+  body { font-size: 14px; }
+  .site-header { gap: 10px; padding: 0 12px; }
+  .brand-logo { width: min(46vw, 155px); }
+  .site-header a { max-width: 110px; text-align: right; line-height: 1.25; }
+  .page-shell { width: 100%; margin: 14px auto 22px; padding: 0 10px; }
+  .intro { border-radius: 12px; padding: 20px 16px 17px; }
+  .intro h1 { font-size: clamp(22px, 6vw, 27px); }
+  .intro > p:not(.eyebrow) { font-size: 13px; }
+  #admissionForm { margin-top: 12px; border-radius: 12px; }
+  .form-section { padding: 20px 14px 22px; }
+  .section-heading { align-items: flex-start; gap: 10px; margin-bottom: 19px; }
+  .section-heading h2 { font-size: 17px; }
+  .fields { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .fields label { min-width: 0; font-size: 12px; }
+  .fields input, .fields select { height: 46px; font-size: 16px; padding: 0 11px; }
+  .fields input[type="file"] { height: auto; font-size: 13px; }
+  .upload-item { grid-template-columns: minmax(0,1fr); padding: 12px; gap: 10px; }
+  .upload-control { min-width: 0; align-items: stretch; }
+  .upload-control input { width: 100%; font-size: 13px; }
+  .form-actions { position: sticky; bottom: 0; z-index: 10; flex-wrap: wrap; gap: 8px; padding: 12px; background: rgba(255,255,255,.97); box-shadow: 0 -4px 14px rgba(0,0,0,.07); }
+  .form-actions .action-spacer { display: none; }
+  .form-actions .btn { flex: 1 1 42%; min-height: 46px; padding: 0 10px; font-size: 12px; }
+  .global-progress { margin: 12px 0; padding: 12px; }
+  .upload-overall-top { align-items: flex-start; font-size: 11px; }
+  .upload-overall p { font-size: 11px; }
+  .privacy-note { padding: 12px; }
+  .consent { font-size: 12px; line-height: 1.45; }
+  .lookup-dialog { width: calc(100% - 20px); max-width: 480px; max-height: 90dvh; overflow-y: auto; }
+  .lookup-dialog form { padding: 18px 14px; }
+  .lookup-dialog h2 { font-size: 19px; }
+  .lookup-dialog input { width: 100%; min-height: 46px; font-size: 16px; }
+  .dialog-actions { flex-direction: column-reverse; }
+  .dialog-actions .btn { width: 100%; min-height: 46px; }
+  .map-mini { margin: 10px; }
+  .map-mini iframe { height: 120px; }
+  .whatsapp-float { right: 10px; bottom: 10px; }
+}
+@media (max-width: 380px) {
+  .site-header a { font-size: 10px; }
+  .brand-logo { width: 132px; }
+  .form-section { padding-left: 11px; padding-right: 11px; }
+  .form-actions .btn { flex-basis: 100%; }
+}

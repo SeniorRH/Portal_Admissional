@@ -30,8 +30,8 @@
         <div class="fields">
           <label class="wide">Nome completo *<input name="nome" autocomplete="name" required maxlength="160" placeholder="Digite seu nome completo"></label>
           <label>Nome social<input name="nomeSocial" maxlength="160" placeholder="Se aplicável"></label>
-          <label>CPF *<input name="cpf" id="cpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14" autocomplete="off" aria-describedby="cpfMessage"><button type="button" class="lookup-button" id="lookupCpfBtn">Consultar cadastro existente</button><small id="cpfMessage" class="field-message" aria-live="polite">Informe os 11 dígitos do CPF. Se já iniciou o cadastro, poderá recuperar os dados e documentos.</small></label>
-          <label>Data de nascimento *<input name="nascimento" type="date" required></label>
+          <label>CPF *<input name="cpf" id="cpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14" autocomplete="off" aria-describedby="cpfMessage"><small id="cpfMessage" class="field-message" aria-live="polite">Ao terminar de digitar um CPF válido, verificaremos automaticamente se existe cadastro anterior.</small></label>
+          <label>Data de nascimento *<input name="nascimento" type="text" inputmode="numeric" autocomplete="bday" placeholder="dd/mm/aaaa" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" aria-describedby="birthDateFormatHelp" required><small id="birthDateFormatHelp" class="field-message">Use o formato dia/mês/ano, por exemplo 23/02/2000.</small></label>
           <label>PIS / NIS<input name="pis" inputmode="numeric" maxlength="14" placeholder="Somente números"></label>
           <label>Quantidade de filhos menores de 18 anos<input name="quantidadeFilhos" id="quantidadeFilhos" type="number" min="0" max="20" value="0"></label>
           <label>CTPS (número)<input name="ctpsNumero" maxlength="30" placeholder="Número da carteira de trabalho"></label>
@@ -103,7 +103,7 @@
       <form method="dialog" id="birthDateForm">
         <h2 id="birthDateTitle">Confirmar identidade</h2>
         <p>Encontramos um cadastro para este CPF. Para proteger seus dados, informe sua data de nascimento para recuperar os dados e documentos já registrados.</p>
-        <label>Data de nascimento *<input id="lookupBirthDate" type="date" required></label>
+        <label>Data de nascimento *<input id="lookupBirthDate" type="text" inputmode="numeric" autocomplete="bday" placeholder="dd/mm/aaaa" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" required></label>
         <p id="lookupBirthMessage" class="field-message" aria-live="polite"></p>
         <div class="dialog-actions"><button type="button" class="btn secondary" id="cancelBirthLookup">Cancelar</button><button type="submit" class="btn primary" id="confirmBirthLookup">Validar e carregar dados</button></div>
       </form>
