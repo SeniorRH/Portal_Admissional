@@ -24,6 +24,8 @@
       <div class="progress-caption"><span id="stepCaption">Etapa 1 de 3</span><span id="progressPercent">33%</span></div>
     </section>
 
+    <div class="upload-overall global-progress" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso e status do cadastro</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">O sistema informará quando estiver validando dados, consultando o Drive ou enviando documentos.</p></div>
+
     <form id="admissionForm">
       <section class="form-section active" data-step="1">
         <div class="section-heading"><span class="step-icon">01</span><div><h2>Dados pessoais</h2><p>Informe seus dados conforme seus documentos.</p></div></div>
@@ -76,7 +78,6 @@
         <div class="document-legend"><span class="pill crucial">Indispensável</span><span class="pill optional">Opcional / conforme aplicabilidade</span><p>Os documentos indispensáveis estão marcados. Para identificação, envie a <b>CNH</b> ou, alternativamente, envie <b>RG e CPF</b>.</p></div>
         <div class="upload-list" id="uploadList"></div>
         <p class="inline-note">As certidões dos filhos serão solicitadas conforme a quantidade informada na primeira etapa.</p>
-        <div class="upload-overall" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso do envio</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">Ao selecionar um documento, ele será enviado imediatamente para a pasta individual do cadastro.</p></div>
         <div id="missingSummary" class="missing-summary hidden" role="alert"></div>
         <div class="privacy-note">
           <strong>Privacidade e proteção de dados</strong>

@@ -51,7 +51,8 @@ function renderOneDocument(doc) {
     uploadSelectedDocument(doc, file, event.target).catch(error => {
       status.textContent = "Falha no envio: " + (error.message || "erro desconhecido"); item.classList.add("file-error"); uploadingKeys.delete(doc.key);
       updateMissingSummary(); updateSubmitVisibility();
-      showStatus(`Não foi possível enviar ${doc.title}: ${error.message || "verifique a configuração do Drive"}. Os arquivos que já estão no Drive serão mantidos.`, true);
+      const ref = criarReferenciaErro();
+      showStatus(`ERRO ${ref}: Não foi possível enviar ${doc.title}: ${error.message || "verifique a configuração do Drive"}. Os arquivos que já estão no Drive serão mantidos. Copie este código e encaminhe à equipe de TI.`, true);
     });
     updateMissingSummary();
   });
@@ -164,6 +165,7 @@ function updateMissingSummary() {
   updateSubmitVisibility();
 }
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function criarReferenciaErro() { return "ADM-" + new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0,14) + "-" + Math.random().toString(36).slice(2,6).toUpperCase(); }
 function showStatus(message, isError) {
   statusMessage.textContent = message;
   statusMessage.className = "status-message " + (isError ? "error" : "success");
@@ -198,8 +200,10 @@ nextBtn.addEventListener("click", async () => {
   }
   if (currentStep === 2 && cadastroId) {
     nextBtn.disabled = true;
-    try { await postAction({...collectFormData(), acao:"iniciarCadastro", origem:window.location.href}); }
-    catch(error) { showStatus("Não foi possível salvar os dados de endereço: " + error.message, true); nextBtn.disabled=false; return; }
+    setOverall(15, "Validando endereço e enviando os dados ao servidor…");
+    showStatus("Salvando os dados de endereço no servidor. Aguarde…", false);
+    try { await postAction({...collectFormData(), acao:"iniciarCadastro", origem:window.location.href}); setOverall(25, "Dados de endereço registrados."); }
+    catch(error) { const ref = criarReferenciaErro(); showStatus("ERRO "+ref+": Não foi possível salvar os dados de endereço: " + error.message + ". Anote o código e envie à equipe de TI.", true); nextBtn.disabled=false; return; }
     finally { nextBtn.disabled=false; }
   }
   setStep(Math.min(currentStep + 1, sections.length));
@@ -239,9 +243,9 @@ document.querySelector('#lookupCpfBtn')?.addEventListener('click', async () => {
     cadastroId=verified.cadastroId;
     Object.entries(verified.dados||{}).forEach(([key,value])=>{ const field=form.elements[key]; if(field && !['cpf'].includes(key)) field.value=value; });
     uploadedKeys.clear();
-    (verified.documentos||[]).forEach(doc=>{ uploadedKeys.add(doc.chave); const status=document.querySelector(`#status-${CSS.escape(doc.chave)}`); const bar=document.querySelector(`#bar-${CSS.escape(doc.chave)}`); if(status) status.textContent=`Já salvo no Drive: ${doc.nome}`; if(bar) bar.style.width='100%'; });
+    (verified.documentos||[]).forEach(doc=>{ uploadedKeys.add(doc.chave); const status=document.querySelector(`#status-${CSS.escape(doc.chave)}`); const bar=document.querySelector(`#bar-${CSS.escape(doc.chave)}`); if(status) status.textContent=`✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`; if(bar) bar.style.width='100%'; });
     renderDocuments();
-    (verified.documentos||[]).forEach(doc=>{uploadedKeys.add(doc.chave); const status=document.querySelector(`#status-${CSS.escape(doc.chave)}`); const bar=document.querySelector(`#bar-${CSS.escape(doc.chave)}`); if(status) status.textContent=`Já salvo no Drive: ${doc.nome}`; if(bar) bar.style.width='100%';});
+    (verified.documentos||[]).forEach(doc=>{uploadedKeys.add(doc.chave); const status=document.querySelector(`#status-${CSS.escape(doc.chave)}`); const bar=document.querySelector(`#bar-${CSS.escape(doc.chave)}`); if(status) status.textContent=`✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`; if(bar) bar.style.width='100%';});
     updateAddressLock(); updateMissingSummary(); updateSubmitVisibility();
     showStatus(verified.mensagem + ' Os documentos já enviados foram recuperados.', false);
   } catch(error) { showStatus(error.message || 'Não foi possível consultar o cadastro.', true); }
@@ -313,9 +317,10 @@ async function postAction(payload) {
   const endpoint = window.APP_CONFIG?.APPS_SCRIPT_URL;
   if (!endpoint || endpoint.includes("COLE_A_URL")) throw new Error("Configure a URL do Apps Script em frontend/config.js.");
   const response = await fetch(endpoint, {method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload),redirect:"follow"});
-  if (!response.ok) throw new Error("O servidor retornou um erro HTTP.");
-  const result = await response.json();
-  if (!result.ok) throw new Error(result.mensagem || "O servidor não confirmou a operação.");
+  if (!response.ok) throw new Error(`O servidor retornou HTTP ${response.status}.`);
+  let result;
+  try { result = await response.json(); } catch (_) { throw new Error("O servidor retornou uma resposta inválida. Confirme a implantação do Apps Script."); }
+  if (!result.ok) throw new Error((result.mensagem || "O servidor não confirmou a operação.") + (result.referencia ? ` [Referência do servidor: ${result.referencia}]` : ""));
   return result;
 }
 async function ensureCadastroSession() {
@@ -330,7 +335,7 @@ async function ensureCadastroSession() {
       uploadedKeys.add(doc.chave);
       const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
       const bar = document.querySelector(`#bar-${CSS.escape(doc.chave)}`);
-      if (status) status.textContent = `Já salvo no Drive: ${doc.nome}`;
+      if (status) status.textContent = `✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`;
       if (bar) bar.style.width = "100%";
     });
     return cadastroId;
@@ -346,7 +351,7 @@ async function refreshDriveDocuments() {
     uploadedKeys.add(doc.chave);
     const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
     const bar = document.querySelector(`#bar-${CSS.escape(doc.chave)}`);
-    if (status && !uploadingKeys.has(doc.chave)) status.textContent = `Já salvo no Drive: ${doc.nome}`;
+    if (status && !uploadingKeys.has(doc.chave)) status.textContent = `✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`;
     if (bar && !uploadingKeys.has(doc.chave)) bar.style.width = "100%";
   });
 }
@@ -368,7 +373,7 @@ async function uploadSelectedDocument(doc, file, input) {
     const data = collectFormData();
     const result = await postAction({acao:"enviarDocumento", cadastroId:id, cpf:data.cpf, documento:{chave:doc.key,nome:doc.title,nomeArquivo:file.name,mimeType:file.type,tamanho:file.size,base64}});
     uploadedKeys.add(doc.key);
-    status.textContent = `Enviado ao Drive · ${file.name}`;
+    status.textContent = `✓ VERIFICADO — enviado ao Drive: ${file.name}`;
     bar.style.width = "100%";
     document.querySelector(`[data-doc="${doc.key}"]`)?.classList.remove("file-error");
     setOverall(100, `${doc.title} salvo na pasta do funcionário.`);
@@ -411,7 +416,8 @@ form.addEventListener("submit", async event => {
   } catch (error) {
     try { await refreshDriveDocuments(); } catch (_) { /* A mensagem de conclusão continua sendo exibida. */ }
     updateMissingSummary();
-    showStatus("Não foi possível concluir o cadastro: " + (error.message || "verifique o acesso ao Drive."), true);
+    const ref = criarReferenciaErro();
+    showStatus("ERRO " + ref + ": Não foi possível concluir o cadastro: " + (error.message || "verifique o acesso ao Drive.") + " Copie este código e encaminhe à equipe de TI.", true);
   } finally {
     sending = false; submitBtn.disabled = false; nextBtn.disabled = false; backBtn.disabled = false; submitBtn.innerHTML = originalText;
     updateMissingSummary(); updateSubmitVisibility();
