@@ -552,7 +552,23 @@ document.querySelector('#addPhone2').addEventListener('click', () => {
 });
 const mapWidget = document.querySelector('#mapWidget');
 const mapDragHandle = document.querySelector('#mapDragHandle');
+const mapToggle = document.querySelector('#mapToggle');
+const mapCollapse = document.querySelector('#mapCollapse');
 let mapDragState = null;
+function setMapCollapsed(collapsed) {
+  mapWidget.classList.toggle('map-collapsed', collapsed);
+  mapWidget.setAttribute('aria-hidden', String(collapsed));
+  mapWidget.inert = collapsed;
+  mapToggle.setAttribute('aria-expanded', String(!collapsed));
+}
+mapToggle.addEventListener('click', () => {
+  setMapCollapsed(false);
+  mapDragHandle.focus();
+});
+mapCollapse.addEventListener('click', () => {
+  setMapCollapsed(true);
+  mapToggle.focus();
+});
 mapDragHandle.addEventListener('pointerdown', event => {
   if (event.button !== 0) return;
   const bounds = mapWidget.getBoundingClientRect();
@@ -589,6 +605,7 @@ mapDragHandle.addEventListener('keydown', event => {
   event.preventDefault();
 });
 window.addEventListener('resize', () => {
+  if (mapWidget.classList.contains('map-collapsed')) return;
   const bounds = mapWidget.getBoundingClientRect();
   mapWidget.style.left = `${Math.max(0, Math.min(window.innerWidth - bounds.width, bounds.left))}px`;
   mapWidget.style.top = `${Math.max(0, Math.min(window.innerHeight - Math.min(48, bounds.height), bounds.top))}px`;

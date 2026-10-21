@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173b67">
   <title>Cadastro Admissional | Senior</title>
-  <link rel="stylesheet" href="styles.css?v=0.6.14">
+  <link rel="stylesheet" href="styles.css?v=0.6.16">
 </head>
 <body>
   <header class="site-header">
@@ -131,8 +131,11 @@
     </dialog>
     <footer>Senior Contabilidade · Cuidar e zelar do seu patrimônio.</footer>
   </main>
-  <aside class="map-mini" id="mapWidget" aria-label="Localização da Senior Contabilidade">
-    <button type="button" class="map-drag-handle" id="mapDragHandle" aria-label="Mover mapa" title="Arraste para mover o mapa">⠿ Senior Contabilidade <span>mover</span></button>
+  <aside class="map-mini map-collapsed" id="mapWidget" aria-label="Localização da Senior Contabilidade" aria-hidden="true" inert>
+    <div class="map-widget-header">
+      <button type="button" class="map-drag-handle" id="mapDragHandle" aria-label="Mover mapa" title="Arraste para mover o mapa">⠿ Senior Contabilidade <span>mover</span></button>
+      <button type="button" class="map-collapse" id="mapCollapse" aria-label="Recolher mapa" title="Recolher mapa">−</button>
+    </div>
     <small>Rua Myltho Anselmo da Silva, 1497 - Mercês, Curitiba - PR</small>
     <iframe title="Mapa da Senior Contabilidade" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=Rua%20Myltho%20Anselmo%20da%20Silva%2C%201497%2C%20Curitiba%2C%20PR&output=embed"></iframe>
     <a href="https://www.google.com/maps/dir/?api=1&destination=Rua+Myltho+Anselmo+da+Silva,+1497,+Curitiba,+PR" target="_blank" rel="noopener">Abrir rota no Google Maps ↗</a>
@@ -140,7 +143,10 @@
   <a class="whatsapp-float" id="whatsappHelp" href="https://wa.me/5541995890097" target="_blank" rel="noopener" aria-label="Contato pelo WhatsApp" title="Contato pelo WhatsApp">
     <svg class="wa-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.2 1.6 6L0 24l6.4-1.7a11.8 11.8 0 0 0 5.7 1.5h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.5ZM12.1 21.8c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-3.8 1 1-3.7-.2-.4a9.8 9.8 0 1 1 8.5 4.7Zm5.4-7.3c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.2s-.8.9-1 1.1c-.2.2-.4.2-.7.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.5-.6.2-.5c.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 2 3.1 4.9 4.3.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 1.9-1.3.2-.6.2-1.2.2-1.3s-.2-.2-.5-.4Z"/></svg>
   </a>
+  <button type="button" class="map-toggle" id="mapToggle" aria-label="Abrir mapa" title="Abrir mapa" aria-controls="mapWidget" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/></svg>
+  </button>
   <script src="config.js?v=0.6.6"></script>
-  <script src="app.js?v=0.6.14"></script>
+  <script src="app.js?v=0.6.16"></script>
 </body>
 </html>
