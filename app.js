@@ -28,49 +28,48 @@ const documents = [
   {key:"titulo", title:"Título de Eleitor", required:false, crucial:false, help:"Opcional / conforme solicitação do RH"},
   {key:"reservista", title:"Certificado de Reservista", required:false, crucial:false, help:"Quando aplicável"},
   {key:"certidao", title:"Certidão de nascimento ou casamento", required:true, crucial:true, help:"Indispensável"},
-  {key:"filhos", title:"Certidões de nascimento dos filhos menores de 18 anos", required:false, crucial:false, help:"Se houver filhos menores de 18 anos"},
   {key:"enderecoDoc", title:"Comprovante de endereço (luz ou telefone)", required:true, crucial:true, help:"Indispensável"},
   {key:"foto", title:"Foto 3x4 atual", required:true, crucial:true, help:"Indispensável"}
 ];
 
-function renderDocuments() {
-  documents.forEach(doc => {
-    const item = document.createElement("div");
-    item.className = "upload-item";
-    item.dataset.doc = doc.key;
-    item.innerHTML = `<span class="upload-copy"><strong>${doc.title}</strong><small>${doc.help}</small><span class="file-status" id="status-${doc.key}">Nenhum arquivo selecionado</span><span class="file-progress"><span id="bar-${doc.key}"></span></span></span>
-      <span class="upload-control"><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${doc.title}"><span class="pill ${doc.crucial ? "crucial" : "optional"}">${doc.crucial ? "Crucial" : "Opcional"}</span></span>`;
-    uploadList.appendChild(item);
-    item.querySelector("input").addEventListener("change", event => {
-      const file = event.target.files[0];
-      const status = document.querySelector(`#status-${doc.key}`);
-      const bar = document.querySelector(`#bar-${doc.key}`);
-      item.classList.remove("file-error", "file-ready");
-      if (!file) { status.textContent = "Nenhum arquivo selecionado"; bar.style.width = "0%"; return; }
-      const allowed = ["application/pdf", "image/jpeg", "image/png"];
-      const maxBytes = (window.APP_CONFIG?.MAX_FILE_MB || 8) * 1024 * 1024;
-      if (!allowed.includes(file.type)) {
-        event.target.value = ""; status.textContent = "Formato inválido. Use PDF, JPG ou PNG."; item.classList.add("file-error"); bar.style.width = "0%"; return;
-      }
-      if (file.size > maxBytes) {
-        event.target.value = ""; status.textContent = `Arquivo maior que ${window.APP_CONFIG?.MAX_FILE_MB || 8} MB.`; item.classList.add("file-error"); bar.style.width = "0%"; return;
-      }
-      status.textContent = `${file.name} · ${formatBytes(file.size)} · iniciando upload…`;
-      bar.style.width = "0%";
-      item.classList.add("file-ready");
-      uploadSelectedDocument(doc, file, event.target).catch(error => {
-        status.textContent = "Falha no envio: " + (error.message || "erro desconhecido");
-        item.classList.add("file-error");
-        uploadingKeys.delete(doc.key);
-        updateMissingSummary();
-        updateSubmitVisibility();
-        showStatus(`Não foi possível enviar ${doc.title}: ${error.message || "verifique a configuração do Drive"}. Os documentos já encontrados na pasta serão recuperados na próxima consulta.`, true);
-      });
-      updateMissingSummary();
+function renderOneDocument(doc) {
+  const item = document.createElement("div");
+  item.className = "upload-item";
+  item.dataset.doc = doc.key;
+  item.innerHTML = `<span class="upload-copy"><strong>${doc.title}</strong><small>${doc.help}</small><span class="file-status" id="status-${doc.key}">Nenhum arquivo selecionado</span><span class="file-progress"><span id="bar-${doc.key}"></span></span></span>
+    <span class="upload-control"><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${doc.title}"><span class="pill ${doc.crucial ? "crucial" : "optional"}">${doc.crucial ? "Crucial" : "Opcional"}</span></span>`;
+  uploadList.appendChild(item);
+  item.querySelector("input").addEventListener("change", event => {
+    const file = event.target.files[0], status = document.querySelector(`#status-${doc.key}`), bar = document.querySelector(`#bar-${doc.key}`);
+    item.classList.remove("file-error", "file-ready");
+    if (!file) { status.textContent = "Nenhum arquivo selecionado"; bar.style.width = "0%"; uploadedKeys.delete(doc.key); updateMissingSummary(); updateSubmitVisibility(); return; }
+    const allowed = ["application/pdf", "image/jpeg", "image/png"];
+    const maxBytes = (window.APP_CONFIG?.MAX_FILE_MB || 5) * 1024 * 1024;
+    if (!allowed.includes(file.type)) { event.target.value = ""; status.textContent = "Formato inválido. Use PDF, JPG ou PNG."; item.classList.add("file-error"); bar.style.width = "0%"; return; }
+    if (file.size > maxBytes) { event.target.value = ""; status.textContent = `Arquivo maior que ${window.APP_CONFIG?.MAX_FILE_MB || 5} MB.`; item.classList.add("file-error"); bar.style.width = "0%"; return; }
+    status.textContent = `${file.name} · ${formatBytes(file.size)} · iniciando upload…`; bar.style.width = "0%"; item.classList.add("file-ready");
+    uploadSelectedDocument(doc, file, event.target).catch(error => {
+      status.textContent = "Falha no envio: " + (error.message || "erro desconhecido"); item.classList.add("file-error"); uploadingKeys.delete(doc.key);
+      updateMissingSummary(); updateSubmitVisibility();
+      showStatus(`Não foi possível enviar ${doc.title}: ${error.message || "verifique a configuração do Drive"}. Os arquivos que já estão no Drive serão mantidos.`, true);
     });
+    updateMissingSummary();
   });
 }
+function renderDocuments() {
+  uploadList.innerHTML = "";
+  documents.forEach(renderOneDocument);
+  const count = Math.min(20, Math.max(0, Number(document.querySelector('#quantidadeFilhos')?.value || 0)));
+  for (let i = 1; i <= count; i++) renderOneDocument({key:`filho_${i}`, title:`Certidão de nascimento do filho ${i}`, required:true, crucial:true, help:"Obrigatória conforme quantidade informada"});
+}
 renderDocuments();
+document.querySelector('#quantidadeFilhos').addEventListener('change', () => {
+  const old = new Map();
+  uploadList.querySelectorAll('[data-doc]').forEach(el => { const input=el.querySelector('input[type=file]'); if(input?.files?.length) old.set(el.dataset.doc,input.files[0]); });
+  renderDocuments();
+  old.forEach((file,key) => { const input=uploadList.querySelector(`[data-doc="${key}"] input[type=file]`); if(input) { /* O navegador não permite restaurar FileList por segurança. Arquivos já enviados permanecem no Drive. */ } });
+  updateMissingSummary(); updateSubmitVisibility();
+});
 
 function setStep(step) {
   currentStep = step;
@@ -127,6 +126,9 @@ function missingFieldsForStep(step) {
   if (step === 3) {
     const selected = key => Boolean(form.elements[key]?.files?.length);
     documents.filter(d => d.required && !selected(d.key) && !uploadedKeys.has(d.key)).forEach(d => missing.push(d.title));
+    const childCount = Math.min(20, Math.max(0, Number(form.elements.quantidadeFilhos?.value || 0)));
+    for (let i=1; i<=childCount; i++) if (!selected(`filho_${i}`) && !uploadedKeys.has(`filho_${i}`)) missing.push(`Certidão de nascimento do filho ${i}`);
+    if (form.elements.sexo?.value === "Masculino" && !selected("reservista") && !uploadedKeys.has("reservista")) missing.push("Certificado de Reservista (sexo masculino)");
     if (!(selected("cnh") || uploadedKeys.has("cnh")) && !(selected("rg") || uploadedKeys.has("rg"))) missing.push("CNH ou RG");
     if (!(selected("cnh") || uploadedKeys.has("cnh")) && !(selected("cpfDoc") || uploadedKeys.has("cpfDoc"))) missing.push("CNH ou documento CPF");
     if ([...uploadingKeys].length) missing.push("Aguarde o término dos uploads em andamento");
@@ -179,12 +181,12 @@ function formatBytes(bytes) {
 nextBtn.addEventListener("click", async () => {
   if (!validateCurrentStep()) return;
   // Prepare the employee folder before the user reaches the document-upload step.
-  if (currentStep === 2) {
+  if (currentStep === 1) {
     nextBtn.disabled = true;
     showStatus("Validando os dados e criando/localizando sua pasta individual no Drive…", false);
     try {
       await ensureCadastroSession();
-      showStatus("Pasta individual preparada. Agora você pode enviar os documentos.", false);
+      showStatus("Pasta individual criada/localizada e dados iniciais registrados. Continue para informar endereço e contato.", false);
       setStep(Math.min(currentStep + 1, sections.length));
     } catch (error) {
       showStatus("Não foi possível criar/localizar a pasta no Drive: " + (error.message || "verifique a configuração do Apps Script e o ID da pasta principal."), true);
@@ -194,10 +196,21 @@ nextBtn.addEventListener("click", async () => {
     }
     return;
   }
+  if (currentStep === 2 && cadastroId) {
+    nextBtn.disabled = true;
+    try { await postAction({...collectFormData(), acao:"iniciarCadastro", origem:window.location.href}); }
+    catch(error) { showStatus("Não foi possível salvar os dados de endereço: " + error.message, true); nextBtn.disabled=false; return; }
+    finally { nextBtn.disabled=false; }
+  }
   setStep(Math.min(currentStep + 1, sections.length));
 });
 backBtn.addEventListener("click", () => setStep(Math.max(currentStep - 1, 1)));
 
+document.querySelector('[name="estadoCivil"]').addEventListener('change', event => {
+  const cert = documents.find(d => d.key === 'certidao');
+  if (cert) cert.title = event.target.value === 'Casado(a)' ? 'Certidão de casamento' : 'Certidão de nascimento ou casamento';
+  renderDocuments(); updateMissingSummary(); updateSubmitVisibility();
+});
 document.querySelector("#pcd").addEventListener("change", event => {
   document.querySelector("#deficienciaWrap").classList.toggle("hidden", event.target.value !== "Sim");
 });
@@ -213,6 +226,27 @@ document.querySelector("#cpf").addEventListener("input", event => {
 });
 document.querySelector("#cpf").addEventListener("blur", () => validateCpf(true));
 document.querySelector("#cpf").addEventListener("keydown", event => { if (event.key === "Tab") validateCpf(true); });
+document.querySelector('#lookupCpfBtn')?.addEventListener('click', async () => {
+  if (!validateCpf(true)) return;
+  const btn=document.querySelector('#lookupCpfBtn'); btn.disabled=true;
+  try {
+    const found=await postAction({acao:'consultarCpf',cpf:document.querySelector('#cpf').value});
+    if (!found.encontrado) { showStatus(found.mensagem || 'Não foi encontrado cadastro anterior.', true); return; }
+    const nome=String(form.elements.nome.value||'').trim();
+    const nascimento=String(form.elements.nascimento.value||'').trim();
+    if (!nome || !nascimento) { showStatus('Cadastro encontrado. Preencha o nome completo e a data de nascimento para confirmar sua identidade e recuperar os dados.', true); form.elements.nome.focus(); return; }
+    const verified=await postAction({acao:'validarIdentidadeCadastro',cpf:form.elements.cpf.value,nome,nascimento});
+    cadastroId=verified.cadastroId;
+    Object.entries(verified.dados||{}).forEach(([key,value])=>{ const field=form.elements[key]; if(field && !['cpf'].includes(key)) field.value=value; });
+    uploadedKeys.clear();
+    (verified.documentos||[]).forEach(doc=>{ uploadedKeys.add(doc.chave); const status=document.querySelector(`#status-${CSS.escape(doc.chave)}`); const bar=document.querySelector(`#bar-${CSS.escape(doc.chave)}`); if(status) status.textContent=`Já salvo no Drive: ${doc.nome}`; if(bar) bar.style.width='100%'; });
+    renderDocuments();
+    (verified.documentos||[]).forEach(doc=>{uploadedKeys.add(doc.chave); const status=document.querySelector(`#status-${CSS.escape(doc.chave)}`); const bar=document.querySelector(`#bar-${CSS.escape(doc.chave)}`); if(status) status.textContent=`Já salvo no Drive: ${doc.nome}`; if(bar) bar.style.width='100%';});
+    updateAddressLock(); updateMissingSummary(); updateSubmitVisibility();
+    showStatus(verified.mensagem + ' Os documentos já enviados foram recuperados.', false);
+  } catch(error) { showStatus(error.message || 'Não foi possível consultar o cadastro.', true); }
+  finally { btn.disabled=false; }
+});
 
 const addressIds = ["estado", "endereco", "numeroResidencia", "complemento", "bairro", "cidade"];
 function updateAddressLock() {
@@ -386,4 +420,9 @@ form.addEventListener("submit", async event => {
 form.addEventListener("change", updateSubmitVisibility);
 form.addEventListener("input", updateSubmitVisibility);
 updateAddressLock();
+document.querySelector('#whatsappHelp')?.addEventListener('click', event => {
+  const nome = String(form.elements.nome?.value || '').trim();
+  const message = nome ? `Oi, sou ${nome} e estou com dúvidas sobre o cadastro admissional.` : 'Olá, estou com dúvidas sobre o cadastro admissional.';
+  event.currentTarget.href = `https://wa.me/5541995890097?text=${encodeURIComponent(message)}`;
+});
 setStep(1);

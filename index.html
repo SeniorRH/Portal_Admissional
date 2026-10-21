@@ -30,14 +30,15 @@
         <div class="fields">
           <label class="wide">Nome completo *<input name="nome" autocomplete="name" required maxlength="160" placeholder="Digite seu nome completo"></label>
           <label>Nome social<input name="nomeSocial" maxlength="160" placeholder="Se aplicável"></label>
-          <label>CPF *<input name="cpf" id="cpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14" autocomplete="off" aria-describedby="cpfMessage"><small id="cpfMessage" class="field-message" aria-live="polite">Informe os 11 dígitos do CPF.</small></label>
+          <label>CPF *<input name="cpf" id="cpf" inputmode="numeric" required placeholder="000.000.000-00" maxlength="14" autocomplete="off" aria-describedby="cpfMessage"><button type="button" class="lookup-button" id="lookupCpfBtn">Consultar cadastro existente</button><small id="cpfMessage" class="field-message" aria-live="polite">Informe os 11 dígitos do CPF. Se já iniciou o cadastro, poderá recuperar os dados e documentos.</small></label>
           <label>Data de nascimento *<input name="nascimento" type="date" required></label>
           <label>PIS / NIS<input name="pis" inputmode="numeric" maxlength="14" placeholder="Somente números"></label>
+          <label>Quantidade de filhos menores de 18 anos<input name="quantidadeFilhos" id="quantidadeFilhos" type="number" min="0" max="20" value="0"></label>
           <label>CTPS (número)<input name="ctpsNumero" maxlength="30" placeholder="Número da carteira de trabalho"></label>
           <label>Série da CTPS<input name="ctpsSerie" maxlength="20" placeholder="Série"></label>
           <label>Estado civil<select name="estadoCivil"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Separado(a)</option><option>Viúvo(a)</option></select></label>
           <label>Sexo (conforme cadastro/documento)
-            <select name="sexo"><option value="">Selecione</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Intersexo">Intersexo</option><option value="Prefiro não informar">Prefiro não informar</option></select>
+            <select name="sexo"><option value="">Selecione</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Prefiro não informar">Prefiro não informar</option></select>
           </label>
           <label>Identidade de gênero
             <select name="identidadeGenero"><option value="">Selecione</option><option value="Mulher cisgênero">Mulher cisgênero</option><option value="Homem cisgênero">Homem cisgênero</option><option value="Mulher transgênero">Mulher transgênero</option><option value="Homem transgênero">Homem transgênero</option><option value="Pessoa não binária">Pessoa não binária</option><option value="Outra identidade">Outra identidade</option><option value="Prefiro não informar">Prefiro não informar</option></select>
@@ -74,6 +75,7 @@
         <div class="section-heading"><span class="step-icon">03</span><div><h2>Documentos para admissão</h2><p>Envie arquivos legíveis. Formatos aceitos: PDF, JPG e PNG.</p></div></div>
         <div class="document-legend"><span class="pill crucial">Indispensável</span><span class="pill optional">Opcional / conforme aplicabilidade</span><p>Os documentos indispensáveis estão marcados. Para identificação, envie a <b>CNH</b> ou, alternativamente, envie <b>RG e CPF</b>.</p></div>
         <div class="upload-list" id="uploadList"></div>
+        <p class="inline-note">As certidões dos filhos serão solicitadas conforme a quantidade informada na primeira etapa.</p>
         <div class="upload-overall" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso do envio</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">Ao selecionar um documento, ele será enviado imediatamente para a pasta individual do cadastro.</p></div>
         <div id="missingSummary" class="missing-summary hidden" role="alert"></div>
         <div class="privacy-note">
@@ -99,6 +101,15 @@
     </form>
     <footer>Senior Contabilidade · Cuidar e zelar do seu patrimônio.</footer>
   </main>
+  <aside class="map-mini" aria-label="Localização da Senior Contabilidade">
+    <strong>Senior Contabilidade</strong>
+    <small>Rua Myltho Anselmo da Silva, 1497 - Mercês, Curitiba - PR</small>
+    <iframe title="Mapa da Senior Contabilidade" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=Rua%20Myltho%20Anselmo%20da%20Silva%2C%201497%2C%20Curitiba%2C%20PR&output=embed"></iframe>
+    <a href="https://www.google.com/maps/dir/?api=1&destination=Rua+Myltho+Anselmo+da+Silva,+1497,+Curitiba,+PR" target="_blank" rel="noopener">Abrir rota no Google Maps ↗</a>
+  </aside>
+  <a class="whatsapp-float" id="whatsappHelp" href="https://wa.me/5541995890097" target="_blank" rel="noopener" aria-label="Tirar dúvidas pelo WhatsApp">
+    <span class="wa-icon">◉</span><span class="wa-copy"><strong>Precisa de ajuda?</strong><small>Fale conosco no WhatsApp</small></span>
+  </a>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
