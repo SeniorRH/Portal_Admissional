@@ -27,7 +27,7 @@ window.APP_CONFIG = {
     datasenior: {
       name: "Datasenior",
       logo: "logodatasenior.png",
-      website: "https://datasenior.com.br/",
+      website: "https://dataseniorauditores.com.br/",
       stylesheet: "themes/datasenior.css?v=0.9.10"
     },
     works: {
