@@ -10,31 +10,31 @@ window.APP_CONFIG = {
       name: "Senior",
       logo: "https://datasenior.com.br/wp-content/uploads/2024/03/lgnormal.svg",
       website: "https://datasenior.com.br/",
-      stylesheet: "themes/senior.css"
+      stylesheet: "themes/senior.css?v=0.9.8"
     },
     seniorcon: {
       name: "Senior Con",
       logo: "https://datasenior.com.br/wp-content/uploads/2024/03/lgnormal.svg",
       website: "https://datasenior.com.br/",
-      stylesheet: "themes/seniorcon.css"
+      stylesheet: "themes/seniorcon.css?v=0.9.3"
     },
     digital: {
       name: "Digital",
       logo: "https://datasenior.com.br/wp-content/uploads/2024/03/logo-digital.jpg",
       website: "https://datasenior.com.br/",
-      stylesheet: "themes/digital.css"
+      stylesheet: "themes/digital.css?v=0.9.3"
     },
     datasenior: {
       name: "Datasenior",
-      logo: "https://dataseniorauditores.com.br/wp-content/uploads/2024/06/Logo-data-senior.png",
+      logo: "logodatasenior.png",
       website: "https://datasenior.com.br/",
-      stylesheet: "themes/datasenior.css"
+      stylesheet: "themes/datasenior.css?v=0.9.9"
     },
     works: {
       name: "Works",
       logo: "https://datasenior.com.br/wp-content/uploads/2024/03/logo-works.jpg",
       website: "https://datasenior.com.br/",
-      stylesheet: "themes/works.css"
+      stylesheet: "themes/works.css?v=0.9.3"
     }
   }
 };

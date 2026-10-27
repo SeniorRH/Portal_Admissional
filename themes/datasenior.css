@@ -7,18 +7,57 @@ body[data-company="datasenior"] {
   background-color: #333;
 }
 
+body[data-company="datasenior"] .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 92px;
+  background: #fff;
+  border-bottom-color: #e5e5e5;
+}
+
+body[data-company="datasenior"] .site-header a {
+  color: #333;
+}
+
+body[data-company="datasenior"] .brand {
+  gap: 0;
+  color: #333;
+}
+
+body[data-company="datasenior"] .brand-logo {
+  width: 250px;
+  height: 90px;
+  max-height: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  background: #fff;
+  object-fit: contain;
+}
+
 body[data-company="datasenior"]::before {
   position: fixed;
-  inset: 76px 0 0;
+  inset: 92px 0 0;
+  z-index: 0;
   background-color: #333;
   background-image: url("../datasenior.png");
-  background-position: center;
+  background-position: center 48px;
   background-repeat: no-repeat;
-  background-size: cover;
+  background-size: 100% auto;
 }
 
 @media (max-width: 640px) {
+  body[data-company="datasenior"] .site-header {
+    height: 78px;
+  }
+
+  body[data-company="datasenior"] .brand-logo {
+    width: 205px;
+    height: 76px;
+    padding: 4px 8px;
+  }
+
   body[data-company="datasenior"]::before {
-    inset-block-start: 66px;
+    inset: 78px 0 0;
   }
 }

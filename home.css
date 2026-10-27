@@ -14,7 +14,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: radial-gradient(ellipse at 50% 0, #fff 0, #f7f8fa 68%);
+  background: #f7f8fa url("fundo.jpg") center top / cover fixed no-repeat;
 }
 
 .home {
@@ -23,23 +23,34 @@ body {
 }
 
 .home-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
   min-height: 84px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: #fff;
   border-bottom: 1px solid #e8e8e8;
+  box-shadow: 0 4px 12px #17203312;
 }
 
 .header-logo {
   display: block;
   width: 158px;
   max-height: 46px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: #ffffffed;
   object-fit: contain;
   object-position: left center;
 }
 
 .home-header > span {
-  color: #6b6b6b;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: #ffffffdf;
+  color: #333;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.4px;
@@ -47,7 +58,13 @@ body {
 
 .welcome {
   max-width: 680px;
-  margin: 66px auto 34px;
+  margin: 48px auto 34px;
+  padding: 24px 28px;
+  border: 1px solid #ffffff99;
+  border-radius: 16px;
+  background: #ffffffd9;
+  box-shadow: 0 8px 26px #17203312;
+  backdrop-filter: blur(5px);
   text-align: center;
 }
 
@@ -78,10 +95,12 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  padding: 24px;
+  border-radius: 18px;
 }
 
 .portal-card {
-  min-height: 206px;
+  min-height: 230px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -108,15 +127,26 @@ body {
 
 .logo-wrap {
   width: 190px;
-  height: 75px;
+  height: 105px;
   display: grid;
   place-items: center;
 }
 
+.datasenior-logo-wrap { width: 260px; }
+
 .logo-wrap img {
   display: block;
   max-width: 100%;
-  max-height: 68px;
+  max-height: 96px;
+  object-fit: contain;
+}
+
+.datasenior-brand {
+  width: min(100%, 250px);
+  max-height: 96px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: #fff;
   object-fit: contain;
 }
 
@@ -153,9 +183,76 @@ body {
 
 .portal-card:hover .portal-action span { transform: translateX(3px); }
 
+.home-map-widget {
+  position: fixed;
+  top: 105px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  width: min(260px, calc(100vw - 24px));
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #dedede;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px #0002;
+}
+
+.home-map-widget.map-collapsed { display: none; }
+
+.home-map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.home-map-close {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f3f5;
+  color: #222;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.home-map-header strong { font-size: 12px; }
+.home-map-widget small { color: #555; font-size: 10px; line-height: 1.4; }
+.home-map-widget iframe { width: 100%; height: 150px; border: 0; border-radius: 7px; }
+.home-map-widget > a { color: #993132; font-size: 11px; font-weight: 700; text-decoration: none; }
+
+.home-map-toggle,
+.home-whatsapp {
+  position: fixed;
+  bottom: 18px;
+  z-index: 30;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  box-shadow: 0 8px 24px #0003;
+  cursor: pointer;
+}
+
+.home-map-toggle { right: 78px; background: #993132; }
+.home-whatsapp { right: 16px; background: #168a50; text-decoration: none; }
+.home-map-toggle svg,.home-whatsapp svg { width: 25px; height: 25px; fill: currentColor; }
+.home-map-toggle[aria-expanded="true"] { display: none; }
+
 footer {
-  padding: 34px 0 28px;
-  color: #777;
+  width: fit-content;
+  max-width: 100%;
+  margin: 24px auto 0;
+  border-radius: 8px;
+  background: #ffffffdf;
+  padding: 10px 14px;
+  color: #444;
   font-size: 12px;
   text-align: center;
 }
@@ -165,12 +262,14 @@ footer {
   .home-header { min-height: 72px; }
   .header-logo { width: 132px; }
   .home-header > span { font-size: 9px; letter-spacing: 1px; }
-  .welcome { margin: 46px auto 25px; }
+  .welcome { margin: 34px auto 25px; padding: 20px 16px; }
   .welcome > p:last-child { font-size: 14px; }
-  .portal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
-  .portal-card { min-height: 176px; padding: 15px 10px; }
-  .logo-wrap { width: 100%; height: 68px; }
-  .logo-wrap img { max-width: 90%; max-height: 60px; }
+  .portal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; padding: 14px; }
+  .portal-card { min-height: 190px; padding: 15px 10px; }
+  .logo-wrap { width: 100%; height: 88px; }
+  .logo-wrap img { max-width: 90%; max-height: 78px; }
+  .datasenior-logo-wrap { width: 100%; }
+  .datasenior-brand { max-width: 100%; }
   .portal-name { font-size: 14px; }
   .portal-action { font-size: 11px; }
 }
@@ -178,4 +277,11 @@ footer {
 @media (max-width: 390px) {
   .portal-grid { grid-template-columns: 1fr; }
   .portal-card { min-height: 150px; }
+}
+
+@media (max-width: 640px) {
+  .home-map-toggle,
+  .home-whatsapp { bottom: 10px; width: 48px; height: 48px; }
+  .home-map-toggle { right: 70px; }
+  .home-whatsapp { right: 12px; }
 }

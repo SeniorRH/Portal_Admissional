@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Acesse o portal admissional da empresa contratante.">
   <title>Portais Admissionais | Senior</title>
-  <link rel="stylesheet" href="home.css">
+  <link rel="stylesheet" href="home.css?v=0.9.4">
 </head>
 <body>
   <main class="home">
@@ -37,8 +37,7 @@
         <span class="portal-action">Acessar portal <span aria-hidden="true">→</span></span>
       </a>
       <a class="portal-card" href="datasenior/">
-        <span class="logo-wrap"><img src="https://dataseniorauditores.com.br/wp-content/uploads/2024/06/Logo-data-senior.png" alt="Logo Datasenior"><span class="logo-fallback" hidden>DS</span></span>
-        <span class="portal-name">Datasenior</span>
+        <span class="logo-wrap datasenior-logo-wrap"><img class="datasenior-brand" src="logodatasenior.png" alt="Logo Datasenior"></span>
         <span class="portal-action">Acessar portal <span aria-hidden="true">→</span></span>
       </a>
       <a class="portal-card" href="works/">
@@ -50,12 +49,38 @@
 
     <footer>Em caso de dúvida, entre em contato com a equipe de Recursos Humanos.</footer>
   </main>
+  <aside class="home-map-widget map-collapsed" id="homeMapWidget" aria-label="Localização da Senior Contabilidade" aria-hidden="true" inert>
+    <div class="home-map-header"><strong>Senior Contabilidade</strong><button type="button" class="home-map-close" id="homeMapClose" aria-label="Fechar mapa">×</button></div>
+    <small>Rua Myltho Anselmo da Silva, 1497 - Mercês, Curitiba - PR</small>
+    <iframe title="Mapa da Senior Contabilidade" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=Rua%20Myltho%20Anselmo%20da%20Silva%2C%201497%2C%20Curitiba%2C%20PR&output=embed"></iframe>
+    <a href="https://www.google.com/maps/dir/?api=1&destination=Rua+Myltho+Anselmo+da+Silva,+1497,+Curitiba,+PR" target="_blank" rel="noopener">Abrir rota no Google Maps ↗</a>
+  </aside>
+  <button type="button" class="home-map-toggle" id="homeMapToggle" aria-label="Abrir mapa" title="Abrir mapa" aria-controls="homeMapWidget" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/></svg>
+  </button>
+  <a class="home-whatsapp" href="https://wa.me/5541995890097" target="_blank" rel="noopener" aria-label="Contato pelo WhatsApp" title="Contato pelo WhatsApp">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.2 1.6 6L0 24l6.4-1.7a11.8 11.8 0 0 0 5.7 1.5h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.5ZM12.1 21.8c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-3.8 1 1-3.7-.2-.4a9.8 9.8 0 1 1 8.5 4.7Zm5.4-7.3c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.2s-.8.9-1 1.1c-.2.2-.4.2-.7.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.5-.6.2-.5c.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 2 3.1 4.9 4.3.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 1.9-1.3.2-.6.2-1.2.2-1.3s-.2-.2-.5-.4Z"/></svg>
+  </a>
   <script>
     document.querySelectorAll(".logo-wrap img").forEach(image => {
       image.addEventListener("error", () => {
         image.hidden = true;
         image.nextElementSibling.hidden = false;
       }, {once:true});
+    });
+    const homeMapWidget = document.querySelector("#homeMapWidget");
+    const homeMapToggle = document.querySelector("#homeMapToggle");
+    function setHomeMapOpen(open) {
+      homeMapWidget.classList.toggle("map-collapsed", !open);
+      homeMapWidget.setAttribute("aria-hidden", String(!open));
+      homeMapWidget.inert = !open;
+      homeMapToggle.setAttribute("aria-expanded", String(open));
+      if (open) document.querySelector("#homeMapClose").focus();
+    }
+    homeMapToggle.addEventListener("click", () => setHomeMapOpen(true));
+    document.querySelector("#homeMapClose").addEventListener("click", () => {
+      setHomeMapOpen(false);
+      homeMapToggle.focus();
     });
   </script>
 </body>

@@ -41,10 +41,19 @@ function applyCompanyBranding() {
   if (!company) throw new Error('A empresa deste link não está configurada.');
   document.body.dataset.company = companySlug;
   if (logo) {
-    logo.src = company.logo || window.APP_CONFIG.FALLBACK_LOGO_URL;
+    logo.src = company.mark || company.logo || window.APP_CONFIG.FALLBACK_LOGO_URL;
     logo.alt = company.name;
+    if (company.mark) {
+      logo.classList.add('brand-mark');
+      const brandName = document.createElement('span');
+      brandName.className = 'brand-name';
+      brandName.textContent = company.displayName || company.name;
+      logo.parentElement.appendChild(brandName);
+    }
     logo.addEventListener('error', () => {
       logo.src = window.APP_CONFIG.FALLBACK_LOGO_URL;
+      logo.classList.remove('brand-mark');
+      logo.parentElement.querySelector('.brand-name')?.remove();
     }, {once:true});
   }
   if (siteLink) siteLink.href = company.website;
@@ -56,10 +65,6 @@ function applyCompanyBranding() {
     companyStyles.href = company.stylesheet;
     companyStyles.dataset.companyStyles = companySlug;
     document.head.appendChild(companyStyles);
-  }
-  if (companySlug !== 'senior') {
-    document.querySelector('#mapWidget')?.setAttribute('hidden', '');
-    document.querySelector('#mapToggle')?.setAttribute('hidden', '');
   }
 }
 applyCompanyBranding();
