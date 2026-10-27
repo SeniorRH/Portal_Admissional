@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: Inter, Arial, sans-serif;
+  color: #242424;
+  background: #f7f8fa;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: radial-gradient(ellipse at 50% 0, #fff 0, #f7f8fa 68%);
+}
+
+.home {
+  width: min(100% - 40px, 1000px);
+  margin: 0 auto;
+}
+
+.home-header {
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.header-logo {
+  display: block;
+  width: 158px;
+  max-height: 46px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.home-header > span {
+  color: #6b6b6b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+
+.welcome {
+  max-width: 680px;
+  margin: 66px auto 34px;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #993132;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.welcome h1 {
+  margin: 0;
+  color: #202020;
+  font-size: clamp(30px, 5vw, 42px);
+  letter-spacing: -1.5px;
+  line-height: 1.15;
+}
+
+.welcome > p:last-child {
+  margin: 14px 0 0;
+  color: #626262;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.portal-card {
+  min-height: 206px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  padding: 22px;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 22px #17203308;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.portal-card:hover,
+.portal-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: #993132;
+  box-shadow: 0 12px 28px #17203312;
+  outline: none;
+}
+
+.logo-wrap {
+  width: 190px;
+  height: 75px;
+  display: grid;
+  place-items: center;
+}
+
+.logo-wrap img {
+  display: block;
+  max-width: 100%;
+  max-height: 68px;
+  object-fit: contain;
+}
+
+.logo-fallback {
+  width: 62px;
+  height: 62px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f7eeee;
+  color: #993132;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.logo-fallback:not([hidden]) { display: grid; }
+
+.portal-name {
+  color: #252525;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.portal-action {
+  color: #993132;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.portal-action span {
+  display: inline-block;
+  margin-left: 3px;
+  transition: transform .16s ease;
+}
+
+.portal-card:hover .portal-action span { transform: translateX(3px); }
+
+footer {
+  padding: 34px 0 28px;
+  color: #777;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .home { width: min(100% - 28px, 520px); }
+  .home-header { min-height: 72px; }
+  .header-logo { width: 132px; }
+  .home-header > span { font-size: 9px; letter-spacing: 1px; }
+  .welcome { margin: 46px auto 25px; }
+  .welcome > p:last-child { font-size: 14px; }
+  .portal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+  .portal-card { min-height: 176px; padding: 15px 10px; }
+  .logo-wrap { width: 100%; height: 68px; }
+  .logo-wrap img { max-width: 90%; max-height: 60px; }
+  .portal-name { font-size: 14px; }
+  .portal-action { font-size: 11px; }
+}
+
+@media (max-width: 390px) {
+  .portal-grid { grid-template-columns: 1fr; }
+  .portal-card { min-height: 150px; }
+}

@@ -26,7 +26,7 @@ window.APP_CONFIG = {
     },
     datasenior: {
       name: "Datasenior",
-      logo: "https://datasenior.com.br/wp-content/uploads/2024/03/data-senior-logo.jpg",
+      logo: "https://dataseniorauditores.com.br/wp-content/uploads/2024/06/Logo-data-senior.png",
       website: "https://datasenior.com.br/",
       stylesheet: "themes/datasenior.css"
     },

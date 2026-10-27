@@ -3,11 +3,60 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0;url=https://seniorrh.github.io/datasenior/">
-  <title>Cadastro Admissional | Datasenior</title>
+  <meta name="description" content="Acesse o portal admissional da empresa contratante.">
+  <title>Portais Admissionais | Senior</title>
+  <link rel="stylesheet" href="home.css">
 </head>
 <body>
-  <p>Redirecionando para o <a href="https://seniorrh.github.io/datasenior/">formulário da Datasenior</a>…</p>
-  <script>window.location.replace("https://seniorrh.github.io/datasenior/");</script>
+  <main class="home">
+    <header class="home-header">
+      <img class="header-logo" src="https://datasenior.com.br/wp-content/uploads/2024/03/lgnormal.svg" alt="Senior">
+      <span>PORTAL ADMISSIONAL</span>
+    </header>
+
+    <section class="welcome" aria-labelledby="page-title">
+      <p class="eyebrow">BEM-VINDO(A)</p>
+      <h1 id="page-title">Escolha o seu portal</h1>
+      <p>Selecione a empresa para a qual você foi contratado para iniciar seu cadastro admissional.</p>
+    </section>
+
+    <nav class="portal-grid" aria-label="Portais admissionais por empresa">
+      <a class="portal-card" href="senior/">
+        <span class="logo-wrap"><img src="https://datasenior.com.br/wp-content/uploads/2024/03/lgnormal.svg" alt="Logo Senior"><span class="logo-fallback" hidden>SE</span></span>
+        <span class="portal-name">Senior</span>
+        <span class="portal-action">Acessar portal <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="portal-card" href="seniorcon/">
+        <span class="logo-wrap"><img src="https://datasenior.com.br/wp-content/uploads/2024/03/lgnormal.svg" alt="Logo Senior Con"><span class="logo-fallback" hidden>SC</span></span>
+        <span class="portal-name">Senior Con</span>
+        <span class="portal-action">Acessar portal <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="portal-card" href="digital/">
+        <span class="logo-wrap"><img src="https://datasenior.com.br/wp-content/uploads/2024/03/logo-digital.jpg" alt="Logo Digital"><span class="logo-fallback" hidden>DI</span></span>
+        <span class="portal-name">Digital</span>
+        <span class="portal-action">Acessar portal <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="portal-card" href="datasenior/">
+        <span class="logo-wrap"><img src="https://dataseniorauditores.com.br/wp-content/uploads/2024/06/Logo-data-senior.png" alt="Logo Datasenior"><span class="logo-fallback" hidden>DS</span></span>
+        <span class="portal-name">Datasenior</span>
+        <span class="portal-action">Acessar portal <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="portal-card" href="works/">
+        <span class="logo-wrap"><img src="https://datasenior.com.br/wp-content/uploads/2024/03/logo-works.jpg" alt="Logo Works"><span class="logo-fallback" hidden>WO</span></span>
+        <span class="portal-name">Works</span>
+        <span class="portal-action">Acessar portal <span aria-hidden="true">→</span></span>
+      </a>
+    </nav>
+
+    <footer>Em caso de dúvida, entre em contato com a equipe de Recursos Humanos.</footer>
+  </main>
+  <script>
+    document.querySelectorAll(".logo-wrap img").forEach(image => {
+      image.addEventListener("error", () => {
+        image.hidden = true;
+        image.nextElementSibling.hidden = false;
+      }, {once:true});
+    });
+  </script>
 </body>
 </html>

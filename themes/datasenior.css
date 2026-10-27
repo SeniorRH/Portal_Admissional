@@ -2,3 +2,23 @@
   --company-accent: #993132;
   --company-accent-hover: #7d2729;
 }
+
+body[data-company="datasenior"] {
+  background-color: #333;
+}
+
+body[data-company="datasenior"]::before {
+  position: fixed;
+  inset: 76px 0 0;
+  background-color: #333;
+  background-image: url("../datasenior.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@media (max-width: 640px) {
+  body[data-company="datasenior"]::before {
+    inset-block-start: 66px;
+  }
+}
