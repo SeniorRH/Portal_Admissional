@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastro Admissional | Datasenior</title>
+</head>
+<body>
+  <p id="routeError">Carregando o formulário seguro da Datasenior…</p>
+  <script>
+    fetch("../index.html").then(response => {
+      if (!response.ok) throw new Error("Não foi possível carregar o formulário.");
+      return response.text();
+    }).then(page => {
+      page = page.replace(/<head>/i, '<head><base href="../">');
+      document.open();
+      document.write(page);
+      document.close();
+    }).catch(error => {
+      document.querySelector("#routeError").textContent = error.message;
+    });
+  </script>
+</body>
+</html>

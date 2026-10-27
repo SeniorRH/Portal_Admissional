@@ -26,6 +26,33 @@ const dependentCountField = document.querySelector('#quantidadeFilhos');
 const childrenFields = document.querySelector('#childrenFields');
 const today = new Date();
 const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+const requestedCompanySlug = window.location.pathname.split('/').filter(Boolean).pop()?.toLowerCase();
+const companySlug = window.APP_CONFIG?.COMPANIES?.[requestedCompanySlug]
+  ? requestedCompanySlug
+  : window.APP_CONFIG?.DEFAULT_COMPANY;
+const company = window.APP_CONFIG?.COMPANIES?.[companySlug];
+
+function applyCompanyBranding() {
+  const logo = document.querySelector('.brand-logo');
+  const siteLink = document.querySelector('.site-header a');
+  const footer = document.querySelector('footer');
+  if (!company) throw new Error('A empresa deste link não está configurada.');
+  if (logo) {
+    logo.src = company.logo || window.APP_CONFIG.FALLBACK_LOGO_URL;
+    logo.alt = company.name;
+    logo.addEventListener('error', () => {
+      logo.src = window.APP_CONFIG.FALLBACK_LOGO_URL;
+    }, {once:true});
+  }
+  if (siteLink) siteLink.href = company.website;
+  if (footer) footer.textContent = `${company.name} · Cuidar e zelar do seu patrimônio.`;
+  document.title = `Cadastro Admissional | ${company.name}`;
+  if (companySlug !== 'senior') {
+    document.querySelector('#mapWidget')?.setAttribute('hidden', '');
+    document.querySelector('#mapToggle')?.setAttribute('hidden', '');
+  }
+}
+applyCompanyBranding();
 
 function formatarDataDigitada(input) {
   let digits = String(input.value || '').replace(/\D/g, '').slice(0, 8);
@@ -841,7 +868,8 @@ function collectFormData() {
 async function postAction(payload) {
   const endpoint = window.APP_CONFIG?.APPS_SCRIPT_URL;
   if (!endpoint || endpoint.includes("COLE_A_URL")) throw new Error("Configure a URL do Apps Script em frontend/config.js.");
-  const response = await fetch(endpoint, {method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload),redirect:"follow"});
+  if (!company) throw new Error("O link não identifica uma empresa válida. Use o link enviado pelo RH.");
+  const response = await fetch(endpoint, {method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...payload, empresa:companySlug}),redirect:"follow"});
   if (!response.ok) throw new Error(`O servidor retornou HTTP ${response.status}.`);
   let result;
   try { result = await response.json(); } catch (_) { throw new Error("O servidor retornou uma resposta inválida. Confirme a implantação do Apps Script."); }
