@@ -28,7 +28,7 @@ window.APP_CONFIG = {
       name: "Datasenior",
       logo: "logodatasenior.png",
       website: "https://datasenior.com.br/",
-      stylesheet: "themes/datasenior.css?v=0.9.9"
+      stylesheet: "themes/datasenior.css?v=0.9.10"
     },
     works: {
       name: "Works",

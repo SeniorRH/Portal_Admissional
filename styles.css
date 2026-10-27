@@ -125,8 +125,9 @@ input, select { min-width: 0; }
 .contact-list-wrap>.text-button{justify-self:start}
 @media(max-width:640px){.contact-fields{grid-template-columns:minmax(0,1fr);gap:12px}.contact-card{padding:12px}}
 
-.site-header a,.eyebrow,.progress-wrap div,.step-icon,.fields input:focus,.fields select:focus,.inline-note,.field-message.valid,.pill:not(.optional),.file-progress span,.progress-track div,.privacy-note>strong,.consent input,.btn.primary,.status-message.success,.map-toggle,.map-mini a{color:var(--company-accent,#993132)}
+.site-header a,.eyebrow,.progress-wrap div,.step-icon,.fields input:focus,.fields select:focus,.inline-note,.field-message.valid,.pill:not(.optional),.file-progress span,.progress-track div,.privacy-note>strong,.consent input,.status-message.success,.map-mini a{color:var(--company-accent,#993132)}
 .progress-wrap div,.file-progress span,.progress-track div,.btn.primary,.map-toggle{background:var(--company-accent,#993132)}
+.btn.primary,.map-toggle{color:#fff}
 .step-icon{background:color-mix(in srgb,var(--company-accent,#993132) 10%,white)}
 .fields input:focus,.fields select:focus{border-color:var(--company-accent,#993132);box-shadow:0 0 0 3px color-mix(in srgb,var(--company-accent,#993132) 12%,transparent)}
 .consent input{accent-color:var(--company-accent,#993132)}

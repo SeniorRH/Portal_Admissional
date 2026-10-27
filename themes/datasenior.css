@@ -25,6 +25,19 @@ body[data-company="datasenior"] .brand {
   color: #333;
 }
 
+body[data-company="datasenior"] .btn.primary,
+body[data-company="datasenior"] .map-toggle {
+  border-color: #333;
+  background: #333;
+  color: #fff;
+}
+
+body[data-company="datasenior"] .btn.primary:hover,
+body[data-company="datasenior"] .map-toggle:hover {
+  border-color: #222;
+  background: #222;
+}
+
 body[data-company="datasenior"] .brand-logo {
   width: 250px;
   height: 90px;
