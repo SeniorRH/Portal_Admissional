@@ -8,7 +8,7 @@
 <body>
   <p id="routeError">Carregando o formulário seguro da Senior…</p>
   <script>
-    fetch("../index.html").then(response => {
+    fetch("../form.html").then(response => {
       if (!response.ok) throw new Error("Não foi possível carregar o formulário.");
       return response.text();
     }).then(page => {

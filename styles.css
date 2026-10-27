@@ -107,3 +107,30 @@ input, select { min-width: 0; }
 .file-picker:focus-within .file-picker-button{outline:3px solid #99313230;border-color:#993132}
 @media(max-width:640px){.map-mini{position:fixed;width:min(230px,calc(100vw - 20px));margin:0}.map-mini iframe{height:120px}.map-toggle{right:72px;bottom:10px}.phone2-fields{grid-template-columns:minmax(0,1fr)}.date-picker{right:46px}}
 @media(max-width:640px){.inline-field-pair{grid-template-columns:minmax(0,1fr)}}
+
+.contact-list-wrap{display:grid;gap:12px}
+.contact-list-heading{display:grid;gap:3px}
+.contact-list-heading strong{font-size:13px;color:#111827}
+.contact-list-heading span{font-size:11px;font-weight:400;color:#4b5563}
+.contacts-list{display:grid;gap:12px}
+.contact-card{min-width:0;margin:0;padding:14px;border:1px solid var(--line);border-radius:10px}
+.contact-card legend{padding:0 6px;font-size:12px;font-weight:700;color:#111827}
+.contact-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.contact-methods{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.contact-methods label{display:inline-flex;flex-direction:row;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.contact-methods label span{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600}
+.contact-methods svg{width:16px;height:16px;fill:currentColor}
+.contact-methods input{width:15px;height:15px;margin:0;accent-color:var(--blue)}
+.remove-contact{justify-self:start;margin-top:8px;color:var(--red)}
+.contact-list-wrap>.text-button{justify-self:start}
+@media(max-width:640px){.contact-fields{grid-template-columns:minmax(0,1fr);gap:12px}.contact-card{padding:12px}}
+
+.site-header a,.eyebrow,.progress-wrap div,.step-icon,.fields input:focus,.fields select:focus,.inline-note,.field-message.valid,.pill:not(.optional),.file-progress span,.progress-track div,.privacy-note>strong,.consent input,.btn.primary,.status-message.success,.map-toggle,.map-mini a{color:var(--company-accent,#993132)}
+.progress-wrap div,.file-progress span,.progress-track div,.btn.primary,.map-toggle{background:var(--company-accent,#993132)}
+.step-icon{background:color-mix(in srgb,var(--company-accent,#993132) 10%,white)}
+.fields input:focus,.fields select:focus{border-color:var(--company-accent,#993132);box-shadow:0 0 0 3px color-mix(in srgb,var(--company-accent,#993132) 12%,transparent)}
+.consent input{accent-color:var(--company-accent,#993132)}
+.btn.primary{border-color:var(--company-accent,#993132)}
+.btn.primary:hover,.map-toggle:hover{background:var(--company-accent-hover,#7d2729)}
+.map-collapse:focus-visible,.map-toggle:focus-visible{outline-color:color-mix(in srgb,var(--company-accent,#993132) 45%,transparent)}
+.file-picker:focus-within .file-picker-button{border-color:var(--company-accent,#993132);outline-color:color-mix(in srgb,var(--company-accent,#993132) 18%,transparent)}

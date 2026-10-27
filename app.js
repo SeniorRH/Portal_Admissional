@@ -26,7 +26,9 @@ const dependentCountField = document.querySelector('#quantidadeFilhos');
 const childrenFields = document.querySelector('#childrenFields');
 const today = new Date();
 const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-const requestedCompanySlug = window.location.pathname.split('/').filter(Boolean).pop()?.toLowerCase();
+const pathSegments = window.location.pathname.split('/').filter(Boolean);
+const lastPathSegment = pathSegments.pop()?.toLowerCase();
+const requestedCompanySlug = lastPathSegment === 'index.html' ? pathSegments.pop()?.toLowerCase() : lastPathSegment;
 const companySlug = window.APP_CONFIG?.COMPANIES?.[requestedCompanySlug]
   ? requestedCompanySlug
   : window.APP_CONFIG?.DEFAULT_COMPANY;
@@ -37,6 +39,7 @@ function applyCompanyBranding() {
   const siteLink = document.querySelector('.site-header a');
   const footer = document.querySelector('footer');
   if (!company) throw new Error('A empresa deste link não está configurada.');
+  document.body.dataset.company = companySlug;
   if (logo) {
     logo.src = company.logo || window.APP_CONFIG.FALLBACK_LOGO_URL;
     logo.alt = company.name;
@@ -47,12 +50,109 @@ function applyCompanyBranding() {
   if (siteLink) siteLink.href = company.website;
   if (footer) footer.textContent = `${company.name} · Cuidar e zelar do seu patrimônio.`;
   document.title = `Cadastro Admissional | ${company.name}`;
+  if (company.stylesheet) {
+    const companyStyles = document.createElement('link');
+    companyStyles.rel = 'stylesheet';
+    companyStyles.href = company.stylesheet;
+    companyStyles.dataset.companyStyles = companySlug;
+    document.head.appendChild(companyStyles);
+  }
   if (companySlug !== 'senior') {
     document.querySelector('#mapWidget')?.setAttribute('hidden', '');
     document.querySelector('#mapToggle')?.setAttribute('hidden', '');
   }
 }
 applyCompanyBranding();
+
+const contactsList = document.querySelector('#contactsList');
+let contactCount = 1;
+
+function contactMethodMarkup(index, method, label, iconPath) {
+  return `<label><input type="checkbox" name="contato_${index}_${method}" data-contact-method value="true"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${iconPath}"/></svg> ${label}</span></label>`;
+}
+function addContactCard(contact = {}) {
+  const index = contactCount + 1;
+  const card = document.createElement('fieldset');
+  card.className = 'contact-card';
+  card.dataset.contactIndex = String(index);
+  card.innerHTML = `<legend>Número adicional ${index - 1}</legend>
+    <div class="contact-fields">
+      <label>Número de contato ${index} *<input name="contato_${index}_numero" type="tel" data-contact-number required maxlength="16" placeholder="(41) 99999-9999"></label>
+      <label>Nome do contato *<input name="contato_${index}_nome" data-contact-name required maxlength="120" placeholder="Nome da pessoa associada ao número"></label>
+    </div>
+    <div class="contact-methods" aria-label="Formas de contato disponíveis para este número">
+      ${contactMethodMarkup(index, 'whatsapp', 'WhatsApp', 'M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.2 1.6 6L0 24l6.4-1.7a11.8 11.8 0 0 0 5.7 1.5h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.5ZM12.1 21.8c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-3.8 1 1-3.7-.2-.4a9.8 9.8 0 1 1 8.5 4.7Zm5.4-7.3c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.2s-.8.9-1 1.1c-.2.2-.4.2-.7.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.5-.6.2-.5c.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 2 3.1 4.9 4.3.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 1.9-1.3.2-.6.2-1.2.2-1.3s-.2-.2-.5-.4Z')}
+      ${contactMethodMarkup(index, 'ligacao', 'Ligação', 'M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.56 3.57.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.56 3.57a1 1 0 0 1-.25 1.02l-2.19 2.2Z')}
+      ${contactMethodMarkup(index, 'sms', 'Mensagem de texto', 'M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2ZM7 11h10v2H7Zm0-4h10v2H7Z')}
+    </div>
+    <button type="button" class="text-button remove-contact" data-remove-contact aria-label="Remover número adicional ${index - 1}">Remover este número</button>`;
+  contactsList.appendChild(card);
+  card.querySelector(`[name="contato_${index}_numero"]`).value = contact.numero || '';
+  card.querySelector(`[name="contato_${index}_nome"]`).value = contact.nome || '';
+  ['whatsapp', 'ligacao', 'sms'].forEach(method => {
+    card.querySelector(`[name="contato_${index}_${method}"]`).checked = contact[method] === true || String(contact[method]) === 'true';
+  });
+  contactCount = index;
+  return card;
+}
+function contactsFromSavedData(data) {
+  if (Array.isArray(data.contatos) && data.contatos.length) return data.contatos;
+  const contacts = [];
+  for (let index = 1; data[`contato_${index}_numero`] || data[`contato_${index}_nome`]; index++) {
+    contacts.push({
+      numero: data[`contato_${index}_numero`] || '',
+      nome: data[`contato_${index}_nome`] || '',
+      whatsapp: data[`contato_${index}_whatsapp`] === true || String(data[`contato_${index}_whatsapp`]) === 'true',
+      ligacao: data[`contato_${index}_ligacao`] === true || String(data[`contato_${index}_ligacao`]) === 'true',
+      sms: data[`contato_${index}_sms`] === true || String(data[`contato_${index}_sms`]) === 'true'
+    });
+  }
+  if (contacts.length) return contacts;
+  const legacy = [];
+  if (data.celular || data.contatoCelular1) legacy.push({numero:data.celular || '', nome:data.contatoCelular1 || data.nome || ''});
+  if (data.celular2 || data.contatoCelular2) legacy.push({numero:data.celular2 || '', nome:data.contatoCelular2 || ''});
+  return legacy.length ? legacy : [{numero:'', nome:data.nome || ''}];
+}
+function renderContacts(contacts = [{numero:'', nome:''}]) {
+  const firstTemplate = contactsList.querySelector('.contact-card').cloneNode(true);
+  contactsList.innerHTML = '';
+  contactCount = 1;
+  const primary = contacts[0] || {};
+  contactsList.appendChild(firstTemplate);
+  const first = firstTemplate;
+  first.querySelector('[name="contato_1_numero"]').value = primary.numero || '';
+  first.querySelector('[name="contato_1_nome"]').value = primary.nome || '';
+  ['whatsapp', 'ligacao', 'sms'].forEach(method => {
+    first.querySelector(`[name="contato_1_${method}"]`).checked = primary[method] === true || String(primary[method]) === 'true';
+  });
+  first.querySelectorAll('[data-contact-number]').forEach(field => formatContactNumber({target:field}));
+  contacts.slice(1).forEach(contact => {
+    const card = addContactCard(contact);
+    card.querySelectorAll('[data-contact-number]').forEach(field => formatContactNumber({target:field}));
+  });
+}
+document.querySelector('#addContact').addEventListener('click', () => {
+  const card = addContactCard();
+  card.querySelector('[data-contact-number]').focus();
+});
+contactsList.addEventListener('click', event => {
+  const removeButton = event.target.closest('[data-remove-contact]');
+  if (!removeButton) return;
+  removeButton.closest('.contact-card').remove();
+  const cards = [...contactsList.querySelectorAll('.contact-card')];
+  contactCount = cards.length;
+  cards.forEach((card, index) => {
+    const number = index + 1;
+    card.dataset.contactIndex = String(number);
+    card.querySelector('legend').textContent = number === 1 ? 'Número principal' : `Número adicional ${number - 1}`;
+    card.querySelectorAll('input').forEach(input => {
+      input.name = input.name.replace(/contato_\d+_/, `contato_${number}_`);
+    });
+    const title = card.querySelector('[data-contact-number]').closest('label');
+    title.firstChild.textContent = `Número de contato ${number} *`;
+  });
+  updateSubmitVisibility();
+});
 
 function formatarDataDigitada(input) {
   let digits = String(input.value || '').replace(/\D/g, '').slice(0, 8);
@@ -222,7 +322,7 @@ const documents = [
   {key:"reservista", title:"Certificado de Reservista", required:false, help:"Quando aplicável"},
   {key:"certidao", title:"Certidão de casamento", required:true, help:"Obrigatória para pessoas casadas"},
   {key:"enderecoDoc", title:"Comprovante de endereço (luz ou telefone)", required:true, help:"Obrigatório"},
-  {key:"foto", title:"Foto 3x4 atual", required:true, help:"Obrigatória"}
+  {key:"foto", title:"Foto 3x4 atual", required:true, help:"Envie uma foto recente, nítida e legível, com o rosto visível para identificação biométrica facial."}
 ];
 
 function documentoObrigatorio(doc) {
@@ -380,7 +480,12 @@ function missingFieldsForStep(step) {
   if (step === 2) {
     const cep = document.querySelector("#cep").value.replace(/\D/g, "");
     if (cep.length !== 8) missing.push("CEP com 8 números");
-    if (form.elements.celular2.value.trim() && !form.elements.contatoCelular2.value.trim()) missing.push("Nome do contato do Celular 2");
+    contactsList.querySelectorAll('.contact-card').forEach((card, index) => {
+      const number = card.querySelector('[data-contact-number]');
+      const name = card.querySelector('[data-contact-name]');
+      if (!number.value.trim()) missing.push(`Número de contato ${index + 1}`);
+      if (!name.value.trim()) missing.push(`Nome do contato para o número ${index + 1}`);
+    });
   }
   if (step === 3) {
     const selected = key => Boolean(form.elements[key]?.files?.length);
@@ -572,11 +677,17 @@ document.querySelector('#racaCor').addEventListener('change', event => {
   form.elements.outraRacaCor.required = other;
   if (!other) form.elements.outraRacaCor.value = '';
 });
-document.querySelector('#addPhone2').addEventListener('click', () => {
-  document.querySelector('#phone2Wrap').classList.remove('hidden');
-  document.querySelector('#addPhone2').classList.add('hidden');
-  document.querySelector('#celular2').focus();
+contactsList.addEventListener('input', event => {
+  if (event.target.matches('[data-contact-number]')) formatContactNumber(event);
 });
+function formatContactNumber(event) {
+  const field = event.target || event;
+  let value = field.value.replace(/\D/g, '').slice(0, 11);
+  if (value.length > 10) value = value.replace(/(\d{2})(\d{5})(\d{1,4})/, '($1) $2-$3');
+  else if (value.length > 6) value = value.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
+  else if (value.length > 2) value = value.replace(/(\d{2})(\d{1,5})/, '($1) $2');
+  field.value = value;
+}
 const mapWidget = document.querySelector('#mapWidget');
 const mapDragHandle = document.querySelector('#mapDragHandle');
 const mapToggle = document.querySelector('#mapToggle');
@@ -639,17 +750,6 @@ window.addEventListener('resize', () => {
   mapWidget.style.right = 'auto';
   mapWidget.style.bottom = 'auto';
 });
-document.querySelectorAll('#celular, #celular2').forEach(field => field.addEventListener('input', event => {
-  let v = event.target.value.replace(/\D/g, "").slice(0, 11);
-  if (v.length > 10) v = v.replace(/(\d{2})(\d{5})(\d{1,4})/, "($1) $2-$3");
-  else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, "($1) $2-$3");
-  else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, "($1) $2");
-  event.target.value = v;
-  if (event.target.id === 'celular2') {
-    form.elements.contatoCelular2.required = Boolean(v);
-    updateSubmitVisibility();
-  }
-}));
 document.querySelector("#pcd").addEventListener("change", event => {
   document.querySelector("#deficienciaWrap").classList.toggle("hidden", event.target.value !== "Sim");
 });
@@ -740,8 +840,9 @@ birthDateForm?.addEventListener('submit', async event => {
     const savedCount = Number(dados.quantidadeFilhos);
     dependentCountField.value = String(Math.min(20, Math.max(Number.isInteger(savedCount) ? savedCount : 0, inferredCount)));
     renderDependentFields();
+    renderContacts(contactsFromSavedData(dados));
     Object.entries(dados).forEach(([key, value]) => {
-      if (key === 'filhos' || /^filho_\d+_(nome|cpf|nascimento)$/.test(key)) return;
+      if (key === 'filhos' || key === 'contatos' || /^filho_\d+_(nome|cpf|nascimento)$/.test(key) || /^contato_\d+_/.test(key)) return;
       const field = form.elements[key] || form.querySelector(`[name="${CSS.escape(key)}"]`);
       if (!field || key === 'cientePrivacidade') return;
       if (key === 'cpf') field.value = formatCpf(value);
@@ -774,11 +875,6 @@ birthDateForm?.addEventListener('submit', async event => {
       if (fileName) fileName.textContent = doc.nome || 'Arquivo já salvo';
     });
     updateDocumentRequirements();
-    if (form.elements.celular2.value || form.elements.contatoCelular2.value) {
-      document.querySelector('#phone2Wrap').classList.remove('hidden');
-      document.querySelector('#addPhone2').classList.add('hidden');
-    }
-    form.elements.contatoCelular2.required = Boolean(form.elements.celular2.value);
     updateMissingSummary(); updateSubmitVisibility();
     birthDateDialog.close();
     setStep(1);
@@ -861,6 +957,22 @@ function fileToBase64(file, onProgress) {
 function collectFormData() {
   const data = {};
   for (const [key, value] of new FormData(form).entries()) if (!(value instanceof File)) data[key] = value;
+  const contacts = [...contactsList.querySelectorAll('.contact-card')].map((card, index) => {
+    const number = index + 1;
+    const contact = {
+      numero: card.querySelector('[data-contact-number]').value.trim(),
+      nome: card.querySelector('[data-contact-name]').value.trim()
+    };
+    ['whatsapp', 'ligacao', 'sms'].forEach(method => {
+      const selected = card.querySelector(`[name="contato_${number}_${method}"]`).checked;
+      data[`contato_${number}_${method}`] = String(selected);
+      contact[method] = selected;
+    });
+    data[`contato_${number}_numero`] = contact.numero;
+    data[`contato_${number}_nome`] = contact.nome;
+    return contact;
+  });
+  data.contatos = contacts;
   data.cientePrivacidade = Boolean(form.elements.cientePrivacidade?.checked);
   data.filhos = [...dependentData.entries()].filter(([index]) => index <= Number(dependentCountField.value || 0)).map(([index, child]) => ({indice:index, nome:child.nome || '', cpf:child.cpf || '', nascimento:child.nascimento || ''}));
   return data;
@@ -973,9 +1085,7 @@ form.addEventListener("submit", async event => {
     form.reset(); uploadedKeys.clear(); driveDocuments.clear(); uploadingKeys.clear(); cadastroId = null; sessionPromise = null; lastAutoLookupCpf = '';
     dependentData.clear(); renderDependentFields();
     document.querySelector('#quantidadeFilhos').value = '0';
-    document.querySelector('#phone2Wrap').classList.add('hidden');
-    document.querySelector('#addPhone2').classList.remove('hidden');
-    form.elements.contatoCelular2.required = false;
+    renderContacts();
     document.querySelector('#identidadeGenero').dispatchEvent(new Event('change', {bubbles:true}));
     document.querySelector('#racaCor').dispatchEvent(new Event('change', {bubbles:true}));
     document.querySelector('#pcd').dispatchEvent(new Event('change', {bubbles:true}));
