@@ -33,6 +33,17 @@ function finalizarProcessamento() {
   processingCount = Math.max(0, processingCount - 1);
   if (processingCount === 0 && processingOverlay) processingOverlay.hidden = true;
 }
+let uploadBatchOverlayActive = false;
+function atualizarLoadingUploads() {
+  const deveMostrarTodos = uploadingKeys.size >= 2;
+  if (deveMostrarTodos && !uploadBatchOverlayActive) {
+    uploadBatchOverlayActive = true;
+    iniciarProcessamento('Processando todos os documentos selecionados. Aguarde até a conclusão dos arquivos.');
+  } else if (!deveMostrarTodos && uploadBatchOverlayActive) {
+    uploadBatchOverlayActive = false;
+    finalizarProcessamento();
+  }
+}
 const dependentData = new Map();
 const dependentCountField = document.querySelector('#quantidadeFilhos');
 const childrenFields = document.querySelector('#childrenFields');
@@ -485,14 +496,14 @@ function renderOneDocument(doc) {
   item.dataset.doc = doc.key;
   const required = documentoObrigatorio(doc);
   item.innerHTML = `<span class="upload-copy"><strong>${escapeHtml(doc.title)}</strong><small>${escapeHtml(doc.help)}</small><span class="file-status" id="status-${doc.key}">Nenhum arquivo selecionado</span></span>
-    <span class="upload-control"><label class="file-picker"><span class="file-picker-button">Selecionar arquivo</span><span class="file-picker-name" id="filename-${doc.key}">Nenhum arquivo escolhido</span><span class="file-inline-loading hidden" aria-live="polite"><span class="file-mini-spinner"></span><span>Processando documento...</span></span><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${escapeHtml(doc.title)}"></label><span class="pill ${required ? "required" : "optional"}">${required ? "Obrigatório" : "Opcional"}</span></span>`;
+    <span class="upload-control"><label class="file-picker"><span class="file-picker-button">Selecionar arquivo</span><span class="file-picker-name" id="filename-${doc.key}">Nenhum arquivo escolhido</span><span class="file-inline-loading hidden" aria-live="polite"><span class="file-mini-spinner"></span><span>Processando arquivo...</span></span><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${escapeHtml(doc.title)}"></label><span class="pill ${required ? "required" : "optional"}">${required ? "Obrigatório" : "Opcional"}</span></span>`;
   uploadList.appendChild(item);
   const existing = driveDocuments.get(doc.key);
   if (existing) {
     item.classList.add("file-ready");
     const status = item.querySelector(`#status-${doc.key}`);
-    if (status) status.textContent = `✓ VERIFICADO — documento registrado com sucesso: ${existing.nome}`;
-    item.querySelector(`#filename-${doc.key}`).textContent = existing.nome || 'Documento já registrado';
+    if (status) status.textContent = `✓ VERIFICADO — documento já registrado: ${existing.nome}`;
+    item.querySelector(`#filename-${doc.key}`).textContent = existing.nome || 'Arquivo já salvo';
   }
   item.querySelector("input").addEventListener("change", event => {
     const file = event.target.files[0], status = document.querySelector(`#status-${doc.key}`), fileName = document.querySelector(`#filename-${doc.key}`);
@@ -511,11 +522,11 @@ function renderOneDocument(doc) {
     }).catch(error => {
       inlineLoading?.classList.add('hidden');
       event.target.value = "";
-      status.textContent = "Falha no envio: " + (error.message || "erro desconhecido"); fileName.textContent = "Nenhum arquivo escolhido"; item.classList.add("file-error"); uploadingKeys.delete(doc.key);
+      status.textContent = "Falha no processamento: " + (error.message || "erro desconhecido"); fileName.textContent = "Nenhum arquivo escolhido"; item.classList.add("file-error"); uploadingKeys.delete(doc.key);
       updateDocumentRequirements();
       updateMissingSummary(); updateSubmitVisibility();
       const ref = criarReferenciaErro();
-      showStatus(`ERRO ${ref}: Não foi possível enviar ${doc.title}: ${error.message || "verifique a conexão com o sistema"}. Os arquivos já registrados serão mantidos. Copie este código e encaminhe à equipe de TI.`, true);
+      showStatus(`ERRO ${ref}: Não foi possível registrar ${doc.title}: ${error.message || "verifique a configuração do sistema"}. Os arquivos já registrados serão mantidos. Copie este código e encaminhe à equipe de TI.`, true);
     });
     updateDocumentRequirements();
     updateMissingSummary();
@@ -668,7 +679,7 @@ function missingFieldsForStep(step) {
     if (form.elements.sexo?.value === "Masculino" && !selected("reservista") && !uploadedKeys.has("reservista")) missing.push("Certificado de Reservista (sexo masculino)");
     if (!(selected("cnh") || uploadedKeys.has("cnh")) && !(selected("rg") || uploadedKeys.has("rg"))) missing.push("CNH ou RG");
     if (!(selected("cnh") || uploadedKeys.has("cnh")) && !(selected("cpfDoc") || uploadedKeys.has("cpfDoc"))) missing.push("CNH ou documento CPF");
-    if ([...uploadingKeys].length) missing.push("Aguarde o processamento dos documentos em andamento");
+    if ([...uploadingKeys].length) missing.push("Aguarde o término do processamento dos arquivos");
     if (!form.elements.cientePrivacidade.checked) missing.push("Confirmação de leitura do aviso de privacidade");
   }
   return [...new Set(missing)];
@@ -803,13 +814,13 @@ nextBtn.addEventListener("click", async () => {
   // Prepare the employee folder before the user reaches the document-upload step.
   if (currentStep === 1) {
     nextBtn.disabled = true;
-    showStatus("Validando os dados e preparando seu cadastro…", false);
+    showStatus("Validando os dados e preparando o processo admissional…", false);
     try {
       await ensureCadastroSession();
       showStatus("Pasta individual criada/localizada e dados iniciais registrados. Continue para informar endereço e contato.", false);
       setStep(Math.min(currentStep + 1, sections.length));
     } catch (error) {
-      showStatus("Não foi possível preparar seu cadastro: " + (error.message || "verifique a conexão com o sistema."), true);
+      showStatus("Não foi possível preparar o cadastro: " + (error.message || "verifique a configuração do Apps Script e o ID da pasta principal."), true);
     } finally {
       nextBtn.disabled = false;
       updateSubmitVisibility();
@@ -967,7 +978,6 @@ async function consultarCpfAutomaticamente(cpfFormatado) {
   lastAutoLookupCpf = cpf;
   lookupInProgress = true;
   try {
-    setOverall(8, 'Verificando se já existe cadastro para este CPF…');
     const found = await postAction({acao:'consultarCpf', cpf});
     if (!found.encontrado) {
       setOverall(0, 'Nenhum cadastro anterior localizado. Você pode continuar o preenchimento.');
@@ -1062,8 +1072,8 @@ birthDateForm?.addEventListener('submit', async event => {
       uploadedKeys.add(doc.chave);
       const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
       const fileName = document.querySelector(`#filename-${CSS.escape(doc.chave)}`);
-      if (status) status.textContent = `✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`;
-      if (fileName) fileName.textContent = doc.nome || 'Arquivo já salvo';
+      if (status) status.textContent = `✓ VERIFICADO — já registrado para este cadastro: ${doc.nome}`;
+      if (fileName) fileName.textContent = doc.nome || 'Arquivo já registrado';
     });
     updateDocumentRequirements();
     updateMissingSummary(); updateSubmitVisibility();
@@ -1170,14 +1180,15 @@ function collectFormData() {
 }
 async function postAction(payload) {
   const mensagens = {
-    iniciarCadastro: 'Criando ou salvando seus dados. Aguarde...',
-    consultarCpf: 'Consultando os dados deste CPF. Aguarde...',
-    validarIdentidadeCadastro: 'Validando seus dados e preparando o cadastro. Aguarde...',
-    listarDocumentos: 'Consultando os documentos já enviados. Aguarde...',
+    iniciarCadastro: 'Preparando seus dados para esta etapa. Aguarde...',
+    consultarCpf: 'Verificando os dados informados. Aguarde...',
+    validarIdentidadeCadastro: 'Validando suas informações. Aguarde...',
+    listarDocumentos: 'Verificando os documentos já registrados. Aguarde...',
     enviarDocumento: 'Processando o documento. Aguarde até a finalização...',
-    concluirCadastro: 'Concluindo o cadastro e gerando os documentos admissionais. Aguarde...'
+    concluirCadastro: 'Concluindo o cadastro e preparando os documentos admissionais. Aguarde...'
   };
-  const mostrarPopup = payload.acao !== 'enviarDocumento';
+  const semPopup = ['consultarCpf', 'validarIdentidadeCadastro', 'enviarDocumento'].includes(payload.acao);
+  const mostrarPopup = !semPopup;
   if (mostrarPopup) iniciarProcessamento(mensagens[payload.acao] || 'Processando os dados. Aguarde até a finalização...');
   try {
     const endpoint = window.APP_CONFIG?.APPS_SCRIPT_URL;
@@ -1206,8 +1217,8 @@ async function ensureCadastroSession() {
       uploadedKeys.add(doc.chave);
       const status = document.querySelector(`#status-${CSS.escape(doc.chave)}`);
       const fileName = document.querySelector(`#filename-${CSS.escape(doc.chave)}`);
-      if (status) status.textContent = `✓ VERIFICADO — já encontrado na pasta do funcionário: ${doc.nome}`;
-      if (fileName) fileName.textContent = doc.nome || 'Arquivo já salvo';
+      if (status) status.textContent = `✓ VERIFICADO — já registrado para este cadastro: ${doc.nome}`;
+      if (fileName) fileName.textContent = doc.nome || 'Arquivo já registrado';
     });
     updateDocumentRequirements();
     return cadastroId;
@@ -1226,8 +1237,8 @@ async function refreshDriveDocuments() {
     const key = item.dataset.doc, doc = driveDocuments.get(key);
     if (!doc || uploadingKeys.has(key)) return;
     const status = item.querySelector(`#status-${CSS.escape(key)}`), fileName = item.querySelector(`#filename-${CSS.escape(key)}`);
-    if (status) status.textContent = `✓ VERIFICADO — documento registrado com sucesso: ${doc.nome}`;
-    if (fileName) fileName.textContent = doc.nome || 'Arquivo já salvo';
+    if (status) status.textContent = `✓ VERIFICADO — documento já registrado: ${doc.nome}`;
+    if (fileName) fileName.textContent = doc.nome || 'Arquivo já registrado';
     item.classList.add('file-ready');
   });
   updateDocumentRequirements();
@@ -1235,19 +1246,20 @@ async function refreshDriveDocuments() {
 async function uploadSelectedDocument(doc, file, input) {
   if (uploadingKeys.has(doc.key)) return;
   uploadingKeys.add(doc.key); uploadedKeys.delete(doc.key);
+  atualizarLoadingUploads();
   updateSubmitVisibility();
   const status = document.querySelector(`#status-${doc.key}`);
   try {
-    setOverall(5, `Preparando o recebimento de ${doc.title}…`);
+    setOverall(5, `Preparando o documento: ${doc.title}…`);
     const id = await ensureCadastroSession();
-    status.textContent = `Preparando ${file.name}…`;
+    status.textContent = `Processando ${file.name}…`;
     const base64 = await fileToBase64(file, pct => setOverall(Math.min(90, pct * 0.9), `Processando documento: ${doc.title}`));
-    status.textContent = `Processando arquivo: ${file.name}…`;
+    status.textContent = `Processando o arquivo: ${file.name}…`;
     const data = collectFormData();
     const result = await postAction({acao:"enviarDocumento", cadastroId:id, cpf:data.cpf, documento:{chave:doc.key,nome:doc.title,nomeArquivo:file.name,mimeType:file.type,tamanho:file.size,base64}});
     uploadedKeys.add(doc.key);
     driveDocuments.set(doc.key, {chave:doc.key, nome:result.nome || file.name});
-    status.textContent = `✓ VERIFICADO — documento recebido com sucesso: ${file.name}`;
+    status.textContent = `✓ VERIFICADO — documento registrado: ${file.name}`;
     const fileName = document.querySelector(`#filename-${doc.key}`);
     if (fileName) fileName.textContent = result.nome || file.name;
     document.querySelector(`[data-doc="${doc.key}"]`)?.classList.remove("file-error");
@@ -1259,6 +1271,7 @@ async function uploadSelectedDocument(doc, file, input) {
     throw error;
   } finally {
     uploadingKeys.delete(doc.key);
+    atualizarLoadingUploads();
     updateMissingSummary();
     updateSubmitVisibility();
   }
@@ -1283,7 +1296,7 @@ form.addEventListener("submit", async event => {
   sending = true; submitBtn.disabled = true; nextBtn.disabled = true; backBtn.disabled = true;
   const originalText = submitBtn.innerHTML;
   try {
-    setOverall(95, "Conferindo os dados e os documentos já recebidos…");
+    setOverall(95, "Conferindo os dados e os documentos já registrados…");
     const result = await postAction({...collectFormData(), acao:"concluirCadastro", cadastroId, origem:window.location.href});
     setOverall(100, "Cadastro concluído com sucesso.");
     form.reset(); uploadedKeys.clear(); driveDocuments.clear(); uploadingKeys.clear(); cadastroId = null; sessionPromise = null; lastAutoLookupCpf = '';
@@ -1304,7 +1317,7 @@ form.addEventListener("submit", async event => {
     try { await refreshDriveDocuments(); } catch (_) { /* A mensagem de conclusão continua sendo exibida. */ }
     updateMissingSummary();
     const ref = criarReferenciaErro();
-    showStatus("ERRO " + ref + ": Não foi possível concluir o cadastro: " + (error.message || "verifique o acesso ao sistema.") + " Copie este código e encaminhe à equipe de TI.", true);
+    showStatus("ERRO " + ref + ": Não foi possível concluir o cadastro: " + (error.message || "verifique as informações informadas.") + " Copie este código e encaminhe à equipe de TI.", true);
   } finally {
     sending = false; submitBtn.disabled = false; nextBtn.disabled = false; backBtn.disabled = false; submitBtn.innerHTML = originalText;
     updateMissingSummary(); updateSubmitVisibility();
