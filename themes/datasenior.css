@@ -4,7 +4,7 @@
 }
 
 body[data-company="datasenior"] {
-  background-color: #333;
+  background-color: #646464;
 }
 
 body[data-company="datasenior"] .site-header {
@@ -17,18 +17,18 @@ body[data-company="datasenior"] .site-header {
 }
 
 body[data-company="datasenior"] .site-header a {
-  color: #333;
+  color: #646464;
 }
 
 body[data-company="datasenior"] .brand {
   gap: 0;
-  color: #333;
+  color: #646464;
 }
 
 body[data-company="datasenior"] .btn.primary,
 body[data-company="datasenior"] .map-toggle {
-  border-color: #333;
-  background: #333;
+  border-color: #646464;
+  background: #646464;
   color: #fff;
 }
 
@@ -52,7 +52,7 @@ body[data-company="datasenior"]::before {
   position: fixed;
   inset: 92px 0 0;
   z-index: 0;
-  background-color: #333;
+  background-color: #646464;
   background-image: url("../datasenior.png");
   background-position: center 48px;
   background-repeat: no-repeat;
