@@ -485,7 +485,7 @@ function renderOneDocument(doc) {
   item.dataset.doc = doc.key;
   const required = documentoObrigatorio(doc);
   item.innerHTML = `<span class="upload-copy"><strong>${escapeHtml(doc.title)}</strong><small>${escapeHtml(doc.help)}</small><span class="file-status" id="status-${doc.key}">Nenhum arquivo selecionado</span></span>
-    <span class="upload-control"><label class="file-picker"><span class="file-picker-button">Selecionar arquivo</span><span class="file-picker-name" id="filename-${doc.key}">Nenhum arquivo escolhido</span><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${escapeHtml(doc.title)}"></label><span class="pill ${required ? "required" : "optional"}">${required ? "Obrigatório" : "Opcional"}</span></span>`;
+    <span class="upload-control"><label class="file-picker"><span class="file-picker-button">Selecionar arquivo</span><span class="file-picker-name" id="filename-${doc.key}">Nenhum arquivo escolhido</span><span class="file-inline-loading hidden" aria-live="polite"><span class="file-mini-spinner"></span><span>Aguardando upload...</span></span><input type="file" name="${doc.key}" accept=".pdf,.jpg,.jpeg,.png" aria-label="${escapeHtml(doc.title)}"></label><span class="pill ${required ? "required" : "optional"}">${required ? "Obrigatório" : "Opcional"}</span></span>`;
   uploadList.appendChild(item);
   const existing = driveDocuments.get(doc.key);
   if (existing) {
@@ -504,7 +504,12 @@ function renderOneDocument(doc) {
     if (file.size > maxBytes) { event.target.value = ""; fileName.textContent = "Nenhum arquivo escolhido"; status.textContent = `Arquivo maior que ${window.APP_CONFIG?.MAX_FILE_MB || 5} MB.`; item.classList.add("file-error"); return; }
     fileName.textContent = file.name;
     status.textContent = `${file.name} · ${formatBytes(file.size)} · iniciando upload…`; item.classList.add("file-ready");
-    uploadSelectedDocument(doc, file, event.target).catch(error => {
+    const inlineLoading = item.querySelector('.file-inline-loading');
+    inlineLoading?.classList.remove('hidden');
+    uploadSelectedDocument(doc, file, event.target).then(() => {
+      inlineLoading?.classList.add('hidden');
+    }).catch(error => {
+      inlineLoading?.classList.add('hidden');
       event.target.value = "";
       status.textContent = "Falha no envio: " + (error.message || "erro desconhecido"); fileName.textContent = "Nenhum arquivo escolhido"; item.classList.add("file-error"); uploadingKeys.delete(doc.key);
       updateDocumentRequirements();
@@ -637,13 +642,17 @@ function missingFieldsForStep(step) {
     contactsList.querySelectorAll('.contact-card').forEach((card, index) => {
       const number = card.querySelector('[data-contact-number]');
       const name = card.querySelector('[data-contact-name]');
+      const methods = [...card.querySelectorAll('[data-contact-method]')];
       const numeroPreenchido = Boolean(number.value.trim());
       const nomePreenchido = Boolean(name.value.trim());
+      const metodoSelecionado = methods.some(method => method.checked);
       number.setCustomValidity(numeroPreenchido || nomePreenchido ? '' : 'Informe o número principal de contato.');
       name.setCustomValidity(numeroPreenchido && !nomePreenchido ? 'Informe o nome da pessoa associada a este telefone.' : '');
+      methods.forEach(method => method.setCustomValidity(numeroPreenchido && nomePreenchido && !metodoSelecionado ? 'Selecione pelo menos uma forma de contato para este número.' : ''));
       if (numeroPreenchido && !nomePreenchido) missing.push(`Nome do contato para o número ${index + 1}`);
       else if (!numeroPreenchido && nomePreenchido) missing.push(`Número de contato ${index + 1}`);
       else if (!numeroPreenchido) missing.push(`Número de contato ${index + 1}`);
+      else if (!metodoSelecionado) missing.push(`Forma de contato para o número ${index + 1}`);
     });
   }
   if (step === 3) {
@@ -681,7 +690,11 @@ function validateCurrentStep() {
     let first = sections[currentStep - 1].querySelector(":invalid");
     if (currentStep === 2) {
       const contato = [...contactsList.querySelectorAll('.contact-card')]
-        .flatMap(card => [card.querySelector('[data-contact-number]'), card.querySelector('[data-contact-name]')])
+        .flatMap(card => [
+          card.querySelector('[data-contact-number]'),
+          card.querySelector('[data-contact-name]'),
+          ...card.querySelectorAll('[data-contact-method]')
+        ])
         .find(field => field && !field.checkValidity());
       if (contato) first = contato;
     }
@@ -848,6 +861,15 @@ document.querySelector('#racaCor').addEventListener('change', event => {
 });
 contactsList.addEventListener('input', event => {
   if (event.target.matches('[data-contact-number]')) formatContactNumber(event);
+});
+contactsList.addEventListener('change', event => {
+  if (!event.target.matches('[data-contact-method]')) return;
+  const card = event.target.closest('.contact-card');
+  if (!card) return;
+  const methods = [...card.querySelectorAll('[data-contact-method]')];
+  if (methods.some(method => method.checked)) {
+    methods.forEach(method => method.setCustomValidity(''));
+  }
 });
 function formatContactNumber(event) {
   const field = event.target || event;
@@ -1155,7 +1177,8 @@ async function postAction(payload) {
     enviarDocumento: 'Enviando o documento ao Drive. Aguarde até a finalização...',
     concluirCadastro: 'Concluindo o cadastro e gerando os documentos admissionais. Aguarde...'
   };
-  iniciarProcessamento(mensagens[payload.acao] || 'Processando os dados. Aguarde até a finalização...');
+  const mostrarPopup = payload.acao !== 'enviarDocumento';
+  if (mostrarPopup) iniciarProcessamento(mensagens[payload.acao] || 'Processando os dados. Aguarde até a finalização...');
   try {
     const endpoint = window.APP_CONFIG?.APPS_SCRIPT_URL;
     if (!endpoint || endpoint.includes("COLE_A_URL")) throw new Error("Configure a URL do Apps Script em frontend/config.js.");
@@ -1167,7 +1190,7 @@ async function postAction(payload) {
     if (!result.ok) throw new Error((result.mensagem || "O servidor não confirmou a operação.") + (result.referencia ? ` [Referência do servidor: ${result.referencia}]` : ""));
     return result;
   } finally {
-    finalizarProcessamento();
+    if (mostrarPopup) finalizarProcessamento();
   }
 }
 async function ensureCadastroSession() {
