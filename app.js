@@ -26,6 +26,8 @@ const dependentCountField = document.querySelector('#quantidadeFilhos');
 const childrenFields = document.querySelector('#childrenFields');
 const today = new Date();
 const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+const tomorrowIso = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 const pathSegments = window.location.pathname.split('/').filter(Boolean);
 const lastPathSegment = pathSegments.pop()?.toLowerCase();
 const requestedCompanySlug = lastPathSegment === 'index.html' ? pathSegments.pop()?.toLowerCase() : lastPathSegment;
@@ -183,8 +185,8 @@ function validarDataAdmissao(input, reportar = false) {
   }
   const [dia, mes, ano] = input.value.split('/').map(Number);
   const selecionada = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-  if (selecionada < todayIso) {
-    input.setCustomValidity('A data de admissão não pode ser anterior à data atual.');
+  if (selecionada <= todayIso) {
+    input.setCustomValidity('Data incorreta. Verifique com o RH a data correta da admissão.');
     return false;
   }
   input.setCustomValidity('');
@@ -211,7 +213,7 @@ function adicionarCalendario(input) {
   const picker = input.parentElement.querySelector('.date-picker');
   if (!input.matches('.birth-date, .admission-date') || !picker || picker === input) return;
   if (input.matches('.birth-date')) picker.max = todayIso;
-  else picker.min = todayIso;
+  else picker.min = tomorrowIso;
   sincronizarCalendario(input);
   input.parentElement.querySelector('.calendar-button')?.addEventListener('click', () => {
     if (typeof picker.showPicker === 'function') picker.showPicker();
@@ -244,7 +246,20 @@ document.addEventListener('blur', event => {
   if (event.target.matches('.birth-date') && event.target.value && !dataBrasileiraValida(event.target.value)) {
     event.target.setCustomValidity('Informe uma data válida no formato dd/mm/aaaa.');
   } else if (event.target.matches('.admission-date')) {
-    validarDataAdmissao(event.target, true);
+    if (!validarDataAdmissao(event.target, true) && event.target.value) {
+      const help = document.querySelector('#admissionDateHelp');
+      if (help) {
+        help.textContent = 'Data incorreta. Verifique com o RH a data correta da admissão.';
+        help.classList.add('error');
+      }
+      event.target.reportValidity();
+    } else {
+      const help = document.querySelector('#admissionDateHelp');
+      if (help) {
+        help.textContent = 'Data prevista de início, definida pelo RH da empresa.';
+        help.classList.remove('error');
+      }
+    }
   }
 }, true);
 
@@ -494,7 +509,7 @@ function missingFieldsForStep(step) {
   if (step === 1 && document.querySelector("#cpf").value && !cpfValido(document.querySelector("#cpf").value)) missing.push("CPF válido");
   if (step === 1) {
     const admissionDate = form.elements.dataAdmissao;
-    if (admissionDate && !validarDataAdmissao(admissionDate)) missing.push("Data de admissão atual ou futura");
+    if (admissionDate && !validarDataAdmissao(admissionDate)) missing.push("Data posterior à atual, confirmada pelo RH");
   }
   if (step === 1) {
     const identity = form.elements.identidadeGenero.value;
