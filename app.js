@@ -71,8 +71,74 @@ function applyCompanyBranding() {
 }
 applyCompanyBranding();
 
+const completionDialog = document.querySelector('#completionDialog');
+const completionCountdown = document.querySelector('#completionCountdown');
+let completionTimer = null;
+
+function companyHomeUrl() {
+  const slugMarker = `/${companySlug}/`;
+  const index = window.location.pathname.lastIndexOf(slugMarker);
+  if (index >= 0) return `${window.location.origin}${window.location.pathname.substring(0, index + 1)}${companySlug}/`;
+  return `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, '')}`;
+}
+
+function voltarParaHomeDaEmpresa() {
+  if (completionTimer) clearInterval(completionTimer);
+  window.location.href = companyHomeUrl();
+}
+
+function mostrarConclusao() {
+  let segundos = 30;
+  if (completionCountdown) completionCountdown.textContent = String(segundos);
+  if (typeof completionDialog?.showModal === 'function' && !completionDialog.open) completionDialog.showModal();
+  completionTimer = setInterval(() => {
+    segundos -= 1;
+    if (completionCountdown) completionCountdown.textContent = String(Math.max(segundos, 0));
+    if (segundos <= 0) voltarParaHomeDaEmpresa();
+  }, 1000);
+}
+
+const returnToCompanyHome = document.querySelector('#returnToCompanyHome');
+returnToCompanyHome?.addEventListener('click', voltarParaHomeDaEmpresa);
+
 const contactsList = document.querySelector('#contactsList');
+const INACTIVITY_MS = 10 * 60 * 1000;
+let inactivityTimer = null;
+function resetInactivityTimer() {
+  if (completionDialog?.open) return;
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(voltarParaHomeDaEmpresa, INACTIVITY_MS);
+}
+['pointerdown', 'keydown', 'touchstart', 'scroll', 'change', 'input'].forEach(eventName => {
+  window.addEventListener(eventName, resetInactivityTimer, {passive: true});
+});
+resetInactivityTimer();
+
 let contactCount = 1;
+document.addEventListener('focusout', event => {
+  const field = event.target;
+  if (!field.matches('[data-contact-number], [data-contact-name]')) return;
+  const card = field.closest('.contact-card');
+  if (!card) return;
+  const number = card.querySelector('[data-contact-number]');
+  const name = card.querySelector('[data-contact-name]');
+  if (number.value.trim() && !name.value.trim()) {
+    name.setCustomValidity('Informe o nome da pessoa associada a este telefone.');
+    showStatus('Faltou informar o nome do contato associado ao telefone. Confira o campo destacado.', true);
+    name.scrollIntoView({behavior: 'smooth', block: 'center'});
+    name.focus({preventScroll: true});
+    name.reportValidity();
+  } else if (!number.value.trim() && name.value.trim()) {
+    number.setCustomValidity('Informe o número de contato.');
+    showStatus('Faltou informar o número do contato. Confira o campo destacado.', true);
+    number.scrollIntoView({behavior: 'smooth', block: 'center'});
+    number.focus({preventScroll: true});
+    number.reportValidity();
+  } else {
+    number.setCustomValidity('');
+    name.setCustomValidity('');
+  }
+});
 
 function contactMethodMarkup(index, method, label, iconPath) {
   return `<label><input type="checkbox" name="contato_${index}_${method}" data-contact-method value="true"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${iconPath}"/></svg> ${label}</span></label>`;
@@ -529,8 +595,13 @@ function missingFieldsForStep(step) {
     contactsList.querySelectorAll('.contact-card').forEach((card, index) => {
       const number = card.querySelector('[data-contact-number]');
       const name = card.querySelector('[data-contact-name]');
-      if (!number.value.trim()) missing.push(`Número de contato ${index + 1}`);
-      if (!name.value.trim()) missing.push(`Nome do contato para o número ${index + 1}`);
+      const numeroPreenchido = Boolean(number.value.trim());
+      const nomePreenchido = Boolean(name.value.trim());
+      number.setCustomValidity(numeroPreenchido || nomePreenchido ? '' : 'Informe o número principal de contato.');
+      name.setCustomValidity(numeroPreenchido && !nomePreenchido ? 'Informe o nome da pessoa associada a este telefone.' : '');
+      if (numeroPreenchido && !nomePreenchido) missing.push(`Nome do contato para o número ${index + 1}`);
+      else if (!numeroPreenchido && nomePreenchido) missing.push(`Número de contato ${index + 1}`);
+      else if (!numeroPreenchido) missing.push(`Número de contato ${index + 1}`);
     });
   }
   if (step === 3) {
@@ -565,8 +636,18 @@ function validateCurrentStep() {
       }
     }
     showStatus(msg, true);
-    const first = sections[currentStep - 1].querySelector(":invalid");
-    if (first && !first.disabled) first.focus();
+    let first = sections[currentStep - 1].querySelector(":invalid");
+    if (currentStep === 2) {
+      const contato = [...contactsList.querySelectorAll('.contact-card')]
+        .flatMap(card => [card.querySelector('[data-contact-number]'), card.querySelector('[data-contact-name]')])
+        .find(field => field && !field.checkValidity());
+      if (contato) first = contato;
+    }
+    if (first && !first.disabled) {
+      first.scrollIntoView({behavior: 'smooth', block: 'center'});
+      first.focus({preventScroll: true});
+      if (typeof first.reportValidity === 'function' && first.value !== undefined) first.reportValidity();
+    }
     return false;
   }
   for (const field of sections[currentStep - 1].querySelectorAll("input,select")) {
@@ -1127,7 +1208,6 @@ form.addEventListener("submit", async event => {
     setOverall(95, "Conferindo os dados e os documentos já enviados ao Drive…");
     const result = await postAction({...collectFormData(), acao:"concluirCadastro", cadastroId, origem:window.location.href});
     setOverall(100, "Cadastro concluído com sucesso.");
-    showStatus("Cadastro concluído. Os dados e documentos foram salvos. Você será direcionado ao início para um novo cadastro.", false);
     form.reset(); uploadedKeys.clear(); driveDocuments.clear(); uploadingKeys.clear(); cadastroId = null; sessionPromise = null; lastAutoLookupCpf = '';
     dependentData.clear(); renderDependentFields();
     document.querySelector('#quantidadeFilhos').value = '0';
@@ -1141,6 +1221,7 @@ form.addEventListener("submit", async event => {
     setStep(1);
     submitBtn.hidden = true;
     window.scrollTo({top:0, behavior:'smooth'});
+    mostrarConclusao();
   } catch (error) {
     try { await refreshDriveDocuments(); } catch (_) { /* A mensagem de conclusão continua sendo exibida. */ }
     updateMissingSummary();
