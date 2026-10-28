@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#993132">
   <title>Cadastro Admissional | Senior</title>
-  <link rel="stylesheet" href="styles.css?v=0.9.11">
+  <link rel="stylesheet" href="styles.css?v=0.9.12">
 </head>
 <body>
   <header class="site-header">
@@ -130,6 +130,13 @@
         <button type="submit" class="btn primary" id="submitBtn" hidden>Concluir e enviar cadastro <span>→</span></button>
       </div>
     </form>
+    <div class="processing-overlay" id="processingOverlay" role="status" aria-live="assertive" hidden>
+      <div class="processing-card">
+        <div class="processing-spinner" aria-hidden="true"></div>
+        <strong>Processando, aguarde...</strong>
+        <p id="processingMessage">Estamos concluindo esta etapa. Não feche ou atualize a página.</p>
+      </div>
+    </div>
     <div class="upload-overall global-progress" id="uploadOverall" aria-live="polite"><div class="upload-overall-top"><strong>Progresso e status do cadastro</strong><span id="overallPercent">0%</span></div><div class="progress-track"><div id="overallProgress"></div></div><p id="overallMessage">O sistema informará quando estiver validando dados, consultando o Drive ou enviando documentos.</p></div>
     <dialog id="completionDialog" class="lookup-dialog" aria-labelledby="completionTitle">
       <form method="dialog">
@@ -170,6 +177,6 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/></svg>
   </button>
   <script src="config.js?v=0.9.4"></script>
-  <script src="app.js?v=0.9.3"></script>
+  <script src="app.js?v=0.9.4"></script>
 </body>
 </html>

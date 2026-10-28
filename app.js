@@ -21,6 +21,18 @@ const uploadingKeys = new Set();
 const driveDocuments = new Map();
 let lastAutoLookupCpf = "";
 let lookupInProgress = false;
+const processingOverlay = document.querySelector('#processingOverlay');
+const processingMessage = document.querySelector('#processingMessage');
+let processingCount = 0;
+function iniciarProcessamento(mensagem = 'Estamos concluindo esta etapa. Não feche ou atualize a página.') {
+  processingCount += 1;
+  if (processingMessage) processingMessage.textContent = mensagem;
+  if (processingOverlay) processingOverlay.hidden = false;
+}
+function finalizarProcessamento() {
+  processingCount = Math.max(0, processingCount - 1);
+  if (processingCount === 0 && processingOverlay) processingOverlay.hidden = true;
+}
 const dependentData = new Map();
 const dependentCountField = document.querySelector('#quantidadeFilhos');
 const childrenFields = document.querySelector('#childrenFields');
@@ -1135,15 +1147,28 @@ function collectFormData() {
   return data;
 }
 async function postAction(payload) {
-  const endpoint = window.APP_CONFIG?.APPS_SCRIPT_URL;
-  if (!endpoint || endpoint.includes("COLE_A_URL")) throw new Error("Configure a URL do Apps Script em frontend/config.js.");
-  if (!company) throw new Error("O link não identifica uma empresa válida. Use o link enviado pelo RH.");
-  const response = await fetch(endpoint, {method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...payload, empresa:companySlug}),redirect:"follow"});
-  if (!response.ok) throw new Error(`O servidor retornou HTTP ${response.status}.`);
-  let result;
-  try { result = await response.json(); } catch (_) { throw new Error("O servidor retornou uma resposta inválida. Confirme a implantação do Apps Script."); }
-  if (!result.ok) throw new Error((result.mensagem || "O servidor não confirmou a operação.") + (result.referencia ? ` [Referência do servidor: ${result.referencia}]` : ""));
-  return result;
+  const mensagens = {
+    iniciarCadastro: 'Criando ou salvando seus dados no Drive. Aguarde...',
+    consultarCpf: 'Consultando os dados deste CPF. Aguarde...',
+    validarIdentidadeCadastro: 'Validando seus dados e preparando o cadastro. Aguarde...',
+    listarDocumentos: 'Consultando os documentos já enviados. Aguarde...',
+    enviarDocumento: 'Enviando o documento ao Drive. Aguarde até a finalização...',
+    concluirCadastro: 'Concluindo o cadastro e gerando os documentos admissionais. Aguarde...'
+  };
+  iniciarProcessamento(mensagens[payload.acao] || 'Processando os dados. Aguarde até a finalização...');
+  try {
+    const endpoint = window.APP_CONFIG?.APPS_SCRIPT_URL;
+    if (!endpoint || endpoint.includes("COLE_A_URL")) throw new Error("Configure a URL do Apps Script em frontend/config.js.");
+    if (!company) throw new Error("O link não identifica uma empresa válida. Use o link enviado pelo RH.");
+    const response = await fetch(endpoint, {method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...payload, empresa:companySlug}),redirect:"follow"});
+    if (!response.ok) throw new Error(`O servidor retornou HTTP ${response.status}.`);
+    let result;
+    try { result = await response.json(); } catch (_) { throw new Error("O servidor retornou uma resposta inválida. Confirme a implantação do Apps Script."); }
+    if (!result.ok) throw new Error((result.mensagem || "O servidor não confirmou a operação.") + (result.referencia ? ` [Referência do servidor: ${result.referencia}]` : ""));
+    return result;
+  } finally {
+    finalizarProcessamento();
+  }
 }
 async function ensureCadastroSession() {
   if (cadastroId) return cadastroId;
