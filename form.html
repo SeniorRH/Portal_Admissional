@@ -40,25 +40,25 @@
             <label>Série da carteira de trabalho<input name="ctpsSerie" maxlength="20" placeholder="Série"></label>
           </div>
           <div id="childrenFields" class="wide dependent-fields hidden"></div>
-          <label>Estado civil<select name="estadoCivil"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Separado(a)</option><option>Viúvo(a)</option></select></label>
-          <label>Sexo (conforme cadastro/documento)
-            <select name="sexo"><option value="">Selecione</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option></select>
+          <label>Estado civil *<select name="estadoCivil" required><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Separado(a)</option><option>Viúvo(a)</option></select></label>
+          <label>Sexo (conforme cadastro/documento) *
+            <select name="sexo" required><option value="">Selecione</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option></select>
           </label>
           <div class="field-pair inline-field-pair">
-            <label>Identidade de gênero
-              <select name="identidadeGenero" id="identidadeGenero"><option value="">Selecione</option><option value="Homem cisgênero">Homem cisgênero</option><option value="Mulher cisgênero">Mulher cisgênero</option><option value="Homem transgênero">Homem transgênero</option><option value="Mulher transgênero">Mulher transgênero</option><option value="Pessoa não binária">Pessoa não binária</option><option value="Outra identidade de gênero">Outra identidade de gênero</option></select>
+            <label>Identidade de gênero *
+              <select name="identidadeGenero" id="identidadeGenero" required><option value="">Selecione</option><option value="Homem cisgênero">Homem cisgênero</option><option value="Mulher cisgênero">Mulher cisgênero</option><option value="Homem transgênero">Homem transgênero</option><option value="Mulher transgênero">Mulher transgênero</option><option value="Pessoa não binária">Pessoa não binária</option><option value="Outra identidade de gênero">Outra identidade de gênero</option></select>
               <small id="identidadeGeneroHelp" class="field-message">Selecione a opção que melhor representa você.</small>
             </label>
             <label id="outraIdentidadeWrap" class="hidden">Descreva sua identidade de gênero *<input name="outraIdentidadeGenero" id="outraIdentidadeGenero" maxlength="120"></label>
           </div>
           <div class="field-pair inline-field-pair">
-            <label>Raça/cor
-              <select name="racaCor" id="racaCor"><option value="">Selecione</option><option>Branca</option><option>Preta</option><option>Parda</option><option>Amarela</option><option>Indígena</option><option>Outra</option></select>
+            <label>Raça/cor *
+              <select name="racaCor" id="racaCor" required><option value="">Selecione</option><option>Branca</option><option>Preta</option><option>Parda</option><option>Amarela</option><option>Indígena</option><option>Outra</option></select>
             </label>
             <label id="outraRacaWrap" class="hidden">Descreva sua raça/cor *<input name="outraRacaCor" id="outraRacaCor" maxlength="120"></label>
           </div>
-          <label>Pessoa com deficiência?
-            <select name="pcd" id="pcd"><option value="">Selecione</option><option value="Não">Não</option><option value="Sim">Sim</option><option value="Prefiro não informar">Prefiro não informar</option></select>
+          <label>Possui alguma deficiência? *
+            <select name="pcd" id="pcd" required><option value="">Selecione</option><option value="Não">Não</option><option value="Sim">Sim</option></select>
           </label>
           <label class="wide hidden" id="deficienciaWrap">Se desejar, informe a deficiência<input name="deficiencia" maxlength="240" placeholder="Informação opcional"></label>
         </div>
@@ -93,7 +93,7 @@
             <button type="button" id="addContact" class="text-button">+ Adicionar outro número para contato</button>
           </div>
           <label>E-mail *<input name="email" type="email" required maxlength="180" autocomplete="email" placeholder="voce@exemplo.com.br"></label>
-          <label>Possui dependentes para salário-família?
+          <label id="dependentesFamiliaWrap" class="hidden">Possui dependentes para salário-família?
             <select name="dependentesFamilia"><option value="">Selecione</option><option value="Sim">Sim</option><option value="Não">Não</option></select>
           </label>
           <label>Possui dependentes para Imposto de Renda?
@@ -136,7 +136,11 @@
         <h2 id="completionTitle">Cadastro concluído com sucesso!</h2>
         <p>Muito obrigado por enviar seus dados e documentos. O processo admissional foi registrado e a equipe de RH dará continuidade ao atendimento.</p>
         <p>Você será direcionado ao início do portal em <strong id="completionCountdown">30</strong> segundos.</p>
-        <div class="dialog-actions"><button type="button" class="btn primary" id="returnToCompanyHome">Voltar ao início agora</button></div>
+        <div class="dialog-actions">
+          <button type="button" class="btn secondary" id="completionMapButton">Ver localização da empresa</button>
+          <a class="btn secondary" id="completionWhatsappButton" target="_blank" rel="noopener">Precisa de ajuda pelo WhatsApp?</a>
+          <button type="button" class="btn primary" id="returnToCompanyHome">Voltar ao início agora</button>
+        </div>
       </form>
     </dialog>
     <dialog id="birthDateDialog" class="lookup-dialog" aria-labelledby="birthDateTitle">
@@ -165,7 +169,7 @@
   <button type="button" class="map-toggle" id="mapToggle" aria-label="Abrir mapa" title="Abrir mapa" aria-controls="mapWidget" aria-expanded="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/></svg>
   </button>
-  <script src="config.js?v=0.9.3"></script>
-  <script src="app.js?v=0.9.2"></script>
+  <script src="config.js?v=0.9.4"></script>
+  <script src="app.js?v=0.9.3"></script>
 </body>
 </html>

@@ -71,6 +71,22 @@ function applyCompanyBranding() {
 }
 applyCompanyBranding();
 
+function configurarAjudaConclusao() {
+  const mapButton = document.querySelector('#completionMapButton');
+  const whatsappButton = document.querySelector('#completionWhatsappButton');
+  const mapUrl = company.mapUrl || 'https://www.google.com/maps/dir/?api=1&destination=Rua+Myltho+Anselmo+da+Silva,+1497,+Curitiba,+PR';
+  const whatsapp = company.whatsapp || '5541995890097';
+  if (mapButton) {
+    mapButton.addEventListener('click', () => window.open(mapUrl, '_blank', 'noopener,noreferrer'));
+  }
+  if (whatsappButton) {
+    const nome = String(form.elements.nome?.value || '').trim();
+    const message = nome ? `Oi, sou ${nome} e preciso de ajuda com o cadastro admissional da ${company.name}.` : `Olá, preciso de ajuda com o cadastro admissional da ${company.name}.`;
+    whatsappButton.href = `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;
+  }
+}
+configurarAjudaConclusao();
+
 const completionDialog = document.querySelector('#completionDialog');
 const completionCountdown = document.querySelector('#completionCountdown');
 let completionTimer = null;
@@ -389,6 +405,17 @@ function saveDependentValues() {
     dependentData.set(index, data);
   });
 }
+function atualizarDependentesFamilia() {
+  const wrap = document.querySelector('#dependentesFamiliaWrap');
+  const field = form.elements.dependentesFamilia;
+  const count = Math.min(20, Math.max(0, Number(dependentCountField.value || 0)));
+  if (wrap) wrap.classList.toggle('hidden', count === 0);
+  if (field) {
+    field.disabled = count === 0;
+    field.required = count > 0;
+    if (count === 0) field.value = '';
+  }
+}
 function renderDependentFields() {
   saveDependentValues();
   const count = Math.min(20, Math.max(0, Number(dependentCountField.value || 0)));
@@ -411,6 +438,7 @@ function renderDependentFields() {
     if (birthField.value) validateDependentBirth(birthField, false);
   }
   updateChildrenDocumentNote();
+  atualizarDependentesFamilia();
 }
 function updateChildrenDocumentNote() {
   const note = document.querySelector('#childrenDocumentNote');
@@ -506,6 +534,7 @@ function updateDocumentRequirements() {
 }
 dependentCountField.addEventListener('input', () => {
   renderDependentFields();
+  atualizarDependentesFamilia();
   renderDocuments();
   updateMissingSummary(); updateSubmitVisibility();
 });
@@ -520,6 +549,7 @@ childrenFields.addEventListener('input', event => {
   }
 });
 dependentCountField.addEventListener('change', async () => {
+  atualizarDependentesFamilia();
   renderDocuments();
   try { await refreshDriveDocuments(); } catch (error) { console.warn('Não foi possível atualizar os documentos do Drive:', error); }
   updateMissingSummary(); updateSubmitVisibility();

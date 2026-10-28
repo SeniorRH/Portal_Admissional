@@ -10,6 +10,8 @@ window.APP_CONFIG = {
       name: "Senior",
       logo: "https://datasenior.com.br/wp-content/uploads/2024/03/lgnormal.svg",
       website: "https://datasenior.com.br/",
+      mapUrl: "https://www.google.com/maps/dir/?api=1&destination=Rua+Myltho+Anselmo+da+Silva,+1497,+Curitiba,+PR",
+      whatsapp: "5541995890097",
       stylesheet: "themes/senior.css?v=0.9.8"
     },
     seniorcon: {
