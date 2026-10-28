@@ -34,13 +34,27 @@ function finalizarProcessamento() {
   if (processingCount === 0 && processingOverlay) processingOverlay.hidden = true;
 }
 let uploadBatchOverlayActive = false;
+let uploadBatchStarted = false;
 function atualizarLoadingUploads() {
-  const deveMostrarTodos = uploadingKeys.size >= 2;
-  if (deveMostrarTodos && !uploadBatchOverlayActive) {
+  if (currentStep !== sections.length) {
+    if (uploadBatchOverlayActive) {
+      uploadBatchOverlayActive = false;
+      uploadBatchStarted = false;
+      finalizarProcessamento();
+    }
+    return;
+  }
+
+  if (!uploadBatchStarted && uploadingKeys.size >= 2) {
+    uploadBatchStarted = true;
+  }
+
+  if (uploadBatchStarted && uploadingKeys.size > 0 && !uploadBatchOverlayActive) {
     uploadBatchOverlayActive = true;
     iniciarProcessamento('Processando todos os documentos selecionados. Aguarde até a conclusão dos arquivos.');
-  } else if (!deveMostrarTodos && uploadBatchOverlayActive) {
+  } else if (uploadBatchStarted && uploadingKeys.size === 0 && uploadBatchOverlayActive) {
     uploadBatchOverlayActive = false;
+    uploadBatchStarted = false;
     finalizarProcessamento();
   }
 }
@@ -594,6 +608,13 @@ function setStep(step) {
   nextBtn.hidden = step === sections.length;
   statusMessage.textContent = "";
   statusMessage.className = "status-message";
+  if (step !== sections.length && uploadBatchOverlayActive) {
+    uploadBatchOverlayActive = false;
+    uploadBatchStarted = false;
+    finalizarProcessamento();
+  } else if (step !== sections.length) {
+    uploadBatchStarted = false;
+  }
   window.scrollTo({top: 0, behavior: "smooth"});
   if (step === 3) updateMissingSummary();
   updateSubmitVisibility();
@@ -1187,7 +1208,7 @@ async function postAction(payload) {
     enviarDocumento: 'Processando o documento. Aguarde até a finalização...',
     concluirCadastro: 'Concluindo o cadastro e preparando os documentos admissionais. Aguarde...'
   };
-  const semPopup = ['consultarCpf', 'validarIdentidadeCadastro', 'enviarDocumento'].includes(payload.acao);
+  const semPopup = ['consultarCpf', 'validarIdentidadeCadastro', 'enviarDocumento', 'iniciarCadastro', 'listarDocumentos', 'concluirCadastro'].includes(payload.acao);
   const mostrarPopup = !semPopup;
   if (mostrarPopup) iniciarProcessamento(mensagens[payload.acao] || 'Processando os dados. Aguarde até a finalização...');
   try {
