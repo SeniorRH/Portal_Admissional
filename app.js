@@ -33,30 +33,9 @@ function finalizarProcessamento() {
   processingCount = Math.max(0, processingCount - 1);
   if (processingCount === 0 && processingOverlay) processingOverlay.hidden = true;
 }
-let uploadBatchOverlayActive = false;
-let uploadBatchStarted = false;
 function atualizarLoadingUploads() {
-  if (currentStep !== sections.length) {
-    if (uploadBatchOverlayActive) {
-      uploadBatchOverlayActive = false;
-      uploadBatchStarted = false;
-      finalizarProcessamento();
-    }
-    return;
-  }
-
-  if (!uploadBatchStarted && uploadingKeys.size >= 2) {
-    uploadBatchStarted = true;
-  }
-
-  if (uploadBatchStarted && uploadingKeys.size > 0 && !uploadBatchOverlayActive) {
-    uploadBatchOverlayActive = true;
-    iniciarProcessamento('Processando todos os documentos selecionados. Aguarde até a conclusão dos arquivos.');
-  } else if (uploadBatchStarted && uploadingKeys.size === 0 && uploadBatchOverlayActive) {
-    uploadBatchOverlayActive = false;
-    uploadBatchStarted = false;
-    finalizarProcessamento();
-  }
+  // A confirmação geral dos arquivos ocorre apenas no mini carregamento
+  // ao lado de cada documento ou na ação final de conclusão.
 }
 const dependentData = new Map();
 const dependentCountField = document.querySelector('#quantidadeFilhos');
@@ -608,13 +587,6 @@ function setStep(step) {
   nextBtn.hidden = step === sections.length;
   statusMessage.textContent = "";
   statusMessage.className = "status-message";
-  if (step !== sections.length && uploadBatchOverlayActive) {
-    uploadBatchOverlayActive = false;
-    uploadBatchStarted = false;
-    finalizarProcessamento();
-  } else if (step !== sections.length) {
-    uploadBatchStarted = false;
-  }
   window.scrollTo({top: 0, behavior: "smooth"});
   if (step === 3) updateMissingSummary();
   updateSubmitVisibility();
@@ -1201,14 +1173,14 @@ function collectFormData() {
 }
 async function postAction(payload) {
   const mensagens = {
-    iniciarCadastro: 'Preparando seus dados para esta etapa. Aguarde...',
+    iniciarCadastro: 'Validando os dados informados e preparando esta etapa. Aguarde...',
     consultarCpf: 'Verificando os dados informados. Aguarde...',
-    validarIdentidadeCadastro: 'Validando suas informações. Aguarde...',
+    validarIdentidadeCadastro: 'Validando a identidade e confirmando os dados cadastrados. Aguarde...',
     listarDocumentos: 'Verificando os documentos já registrados. Aguarde...',
-    enviarDocumento: 'Processando o documento. Aguarde até a finalização...',
-    concluirCadastro: 'Concluindo o cadastro e preparando os documentos admissionais. Aguarde...'
+    enviarDocumento: 'Processando o documento selecionado. Aguarde...',
+    concluirCadastro: 'Concluindo o cadastro e preparando a documentação admissional. Aguarde...'
   };
-  const semPopup = ['consultarCpf', 'validarIdentidadeCadastro', 'enviarDocumento', 'iniciarCadastro', 'listarDocumentos', 'concluirCadastro'].includes(payload.acao);
+  const semPopup = ['consultarCpf', 'listarDocumentos', 'enviarDocumento'].includes(payload.acao);
   const mostrarPopup = !semPopup;
   if (mostrarPopup) iniciarProcessamento(mensagens[payload.acao] || 'Processando os dados. Aguarde até a finalização...');
   try {
