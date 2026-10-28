@@ -172,6 +172,24 @@ function dataBrasileiraValida(value) {
   const date = new Date(y, mo - 1, d);
   return date.getFullYear() === y && date.getMonth() === mo - 1 && date.getDate() === d;
 }
+function validarDataAdmissao(input, reportar = false) {
+  if (!input.value) {
+    input.setCustomValidity('Informe a data de admissão programada pelo RH.');
+    return false;
+  }
+  if (!dataBrasileiraValida(input.value)) {
+    input.setCustomValidity('Informe uma data válida no formato dd/mm/aaaa.');
+    return false;
+  }
+  const [dia, mes, ano] = input.value.split('/').map(Number);
+  const selecionada = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+  if (selecionada < todayIso) {
+    input.setCustomValidity('A data de admissão não pode ser anterior à data atual.');
+    return false;
+  }
+  input.setCustomValidity('');
+  return true;
+}
 function idadeEmAnos(value) {
   if (!dataBrasileiraValida(value)) return null;
   const [day, month, year] = value.split('/').map(Number);
@@ -191,8 +209,9 @@ function sincronizarCalendario(input) {
 }
 function adicionarCalendario(input) {
   const picker = input.parentElement.querySelector('.date-picker');
-  if (!input.matches('.birth-date') || !picker || picker === input) return;
-  picker.max = todayIso;
+  if (!input.matches('.birth-date, .admission-date') || !picker || picker === input) return;
+  if (input.matches('.birth-date')) picker.max = todayIso;
+  else picker.min = todayIso;
   sincronizarCalendario(input);
   input.parentElement.querySelector('.calendar-button')?.addEventListener('click', () => {
     if (typeof picker.showPicker === 'function') picker.showPicker();
@@ -204,11 +223,12 @@ function adicionarCalendario(input) {
     input.dispatchEvent(new Event('change', {bubbles:true}));
   });
 }
-document.querySelectorAll('.birth-date').forEach(adicionarCalendario);
+document.querySelectorAll('.birth-date, .admission-date').forEach(adicionarCalendario);
 document.addEventListener('input', event => {
-  if (event.target.matches('.birth-date')) {
+  if (event.target.matches('.birth-date, .admission-date')) {
     formatarDataDigitada(event.target);
-    event.target.setCustomValidity('');
+    if (event.target.matches('.admission-date')) validarDataAdmissao(event.target, false);
+    else event.target.setCustomValidity('');
     sincronizarCalendario(event.target);
   }
   if (event.target.matches('[data-dependent-cpf]')) {
@@ -223,6 +243,8 @@ document.addEventListener('input', event => {
 document.addEventListener('blur', event => {
   if (event.target.matches('.birth-date') && event.target.value && !dataBrasileiraValida(event.target.value)) {
     event.target.setCustomValidity('Informe uma data válida no formato dd/mm/aaaa.');
+  } else if (event.target.matches('.admission-date')) {
+    validarDataAdmissao(event.target, true);
   }
 }, true);
 
@@ -470,6 +492,10 @@ function missingFieldsForStep(step) {
     else if (field.required && !field.checkValidity()) missing.push(fieldLabel(field));
   }
   if (step === 1 && document.querySelector("#cpf").value && !cpfValido(document.querySelector("#cpf").value)) missing.push("CPF válido");
+  if (step === 1) {
+    const admissionDate = form.elements.dataAdmissao;
+    if (admissionDate && !validarDataAdmissao(admissionDate)) missing.push("Data de admissão atual ou futura");
+  }
   if (step === 1) {
     const identity = form.elements.identidadeGenero.value;
     const race = form.elements.racaCor.value;
@@ -857,7 +883,7 @@ birthDateForm?.addEventListener('submit', async event => {
       else if (key === 'identidadeGenero' && value === 'Outra identidade') field.value = 'Outra identidade de gênero';
       else field.value = value == null ? '' : String(value);
     });
-    form.querySelectorAll('.birth-date').forEach(sincronizarCalendario);
+    form.querySelectorAll('.birth-date, .admission-date').forEach(sincronizarCalendario);
     saveDependentValues();
     childrenFields.querySelectorAll('[data-dependent-cpf]').forEach(formatCpfField);
     childrenFields.querySelectorAll('[data-dependent-cpf]').forEach(field => validarCpfDependente(field));
